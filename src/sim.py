@@ -40,11 +40,11 @@ def make_blocks(template='polygons', block_size=5):
 
     n_sections = len(template) if isinstance(template, (tuple, list)) else 1
     template, block_size = itemize(n_sections, template, block_size)
-    blocks = [TEMPLATES[block] if isinstance(block, str) else block for block in template]
+    template = [TEMPLATES[block] if isinstance(block, str) else block for block in template]
     locs, labels = [], []
 
-    for i, (block, size) in enumerate(zip(blocks, block_size)):
-        grid = np.repeat(np.repeat(block, size, 0), size, 1)[::-1, :, None]
+    for i, (t, s) in enumerate(zip(template, block_size)):
+        grid = np.repeat(np.repeat(t, s, 0), s, 1)[::-1, :, None]
         components, counts = np.unique(grid, return_counts=True)
         locs += [np.stack(np.where(grid.T == component)).T + (i, 0., 0.) for component in components]
         labels.append(np.repeat(components, counts))
@@ -129,8 +129,8 @@ def make_dataset(template='polygons', block_size=5, n_features=100, n_equivocal=
     data[:, 1:3] = np.random.normal(data[:, 1:3], wiggle)
     components = np.unique(labels)
 
-    for i, component in enumerate(components):
-        n_samples = (data[:, 0] == component).shape[0]
+    for i, c in enumerate(components):
+        n_samples = (data[:, 0] == c).shape[0]
         mask = np.random.permutation(n_samples)[:int(mix*n_samples)] + (i - 1)*n_samples
         data[mask, 1:3] = np.random.permutation(data[mask, 1:3])
 

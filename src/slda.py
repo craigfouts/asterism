@@ -442,7 +442,7 @@ class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
 
         return likelihood
     
-    def fit(self, data, n_steps=100, burn_in=50, description='SLDA', verbosity=1):
+    def fit(self, data, n_steps=200, burn_in=150, description='SLDA', verbosity=1):
         """Obtains document and topic assignments for each sample based on its 
         spatial location and featurization.
 

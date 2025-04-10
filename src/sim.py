@@ -53,7 +53,7 @@ def make_blocks(template='polygons', block_size=5):
 
     return locs, labels
 
-def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=5., scale=1.):
+def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1.):
     """Generates sample locations, labels, and features based on the given block
     template and feature parameterization.
     
@@ -71,7 +71,7 @@ def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, 
         Number of redundant features.
     n_repeated : int, default=0
         Number of repeated features.
-    topic_sep : float, default=1.0
+    topic_sep : float, default=10.0
         Scale of feature separation between topics.
     scale : float, default=1.0
         Scale of feature values.
@@ -89,12 +89,12 @@ def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, 
     _, bins = np.unique(labels, return_counts=True)
     n_topics, weights = bins.shape[0], bins/n_samples
     n_informative = n_features - n_equivocal - n_redundant - n_repeated
-    features, _ = make_classification(n_samples, n_features, n_informative=n_informative, n_redundant=n_redundant, n_repeated=n_repeated, n_classes=n_topics, n_clusters_per_class=1, weights=weights, flip_y=0., class_sep=topic_sep, scale=scale, shuffle=False)
-    data = np.hstack([locs, features])
+    features, topics = make_classification(n_samples, n_features, n_informative=n_informative, n_redundant=n_redundant, n_repeated=n_repeated, n_classes=n_topics, n_clusters_per_class=1, weights=weights, flip_y=0., class_sep=topic_sep, scale=scale, shuffle=False)
+    data = np.hstack([locs, features[topics.argsort()[labels.argsort().argsort()]]])
 
     return data, labels
 
-def make_dataset(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=5., scale=1., wiggle=0., mix=0., return_tensor=False):
+def make_dataset(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1., wiggle=0., mix=0., return_tensor=False):
     """Generates a sample dataset based on the given block template and feature
     parameterization.
     
@@ -112,7 +112,7 @@ def make_dataset(template='polygons', block_size=5, n_features=100, n_equivocal=
         Number of redundant features.
     n_repeated, default=0
         Number of repeated features.
-    topic_sep : float, default=5.0
+    topic_sep : float, default=10.0
         Feature separation factor.
     scale : float, default=1.0
         Feature scale factor.
@@ -130,9 +130,10 @@ def make_dataset(template='polygons', block_size=5, n_features=100, n_equivocal=
     sections = np.unique(data[:, 0])
 
     for i, s in enumerate(sections):
-        n_samples = (data[:, 0] == s).sum()
-        mask = np.random.permutation(n_samples)[:int(mix*n_samples)] + i*n_samples
-        data[mask, 1:3] = np.random.permutation(data[mask, 1:3])
+        mask = data[:, 0] == s
+        n_samples, offset = mask.sum(), mask.argmax()
+        idx = np.random.permutation(n_samples)[:int(mix*n_samples)] + offset
+        data[idx, 1:3] = np.random.permutation(data[idx, 1:3])
 
     if return_tensor:
         data, labels = torch.tensor(data, dtype=torch.float32), torch.tensor(labels, dtype=torch.int32)

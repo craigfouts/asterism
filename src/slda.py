@@ -32,8 +32,8 @@ def featurize(data, scale=1., n_neighbors=6):
     sections = np.unique(data[:, 0])
     features = []
 
-    for i in sections:
-        mask = data[:, 0] == i
+    for s in sections:
+        mask = data[:, 0] == s
         proximity = cdist(data[mask, 1:3], data[mask, 1:3], 'sqeuclidean')
         variance = scale*np.sort(proximity, -1)[:, n_neighbors]
         gaussian = np.exp(-proximity/(2*variance))/(np.sqrt(2*np.pi*variance))
@@ -67,8 +67,8 @@ def distribute(data, n_documents=None, scale=1., n_neighbors=6):
     sections = np.unique(data[:, 0])
     documents = []
 
-    for i in sections:
-        mask = data[:, 0] == i
+    for s in sections:
+        mask = data[:, 0] == s
 
         if n_documents is None:
             n_documents = mask.sum()//4
@@ -207,15 +207,17 @@ class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
     def _shuffle(self, words):
         return shuffle(words, self.documents, self.n_topics, self.n_words, return_counts=True)
     
-    def build(self, data, n_steps=500, burn_in=400):
+    def build(self, data, n_steps=200, burn_in=150):
         """Initializes model parameters and class attributes.
         
         Parameters
         ----------
         data : ndarray
             Sample dataset.
-        n_steps : int, default=500
+        n_steps : int, default=200
             Number of Gibbs sampling steps.
+        burn_in : int, default=150
+            Number of sampling steps to discard.
 
         Returns
         -------
@@ -448,9 +450,9 @@ class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
         ----------
         data : ndarray
             Sample dataset.
-        n_steps : int, default=100
+        n_steps : int, default=200
             Number of Gibbs sampling steps.
-        burn_in : int, default=50
+        burn_in : int, default=150
             Number of sampling steps to discard.
         description : str, default='SLDA'
             Model description.

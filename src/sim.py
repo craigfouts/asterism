@@ -53,7 +53,7 @@ def make_blocks(template='polygons', block_size=5):
 
     return locs, labels
 
-def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=1., scale=1.):
+def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=5., scale=1.):
     """Generates sample locations, labels, and features based on the given block
     template and feature parameterization.
     
@@ -112,7 +112,7 @@ def make_dataset(template='polygons', block_size=5, n_features=100, n_equivocal=
         Number of redundant features.
     n_repeated, default=0
         Number of repeated features.
-    topic_sep : float, default=1.0
+    topic_sep : float, default=5.0
         Feature separation factor.
     scale : float, default=1.0
         Feature scale factor.

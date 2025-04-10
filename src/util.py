@@ -115,7 +115,7 @@ def format_ax(ax, title=None, aspect='equal', show_ax=True):
 
     return ax
 
-def show_dataset(data, labels, size=15, figsize=10, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
+def show_dataset(data, labels, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
     """Displays scatter plot(s) of sample points colored by label and separated
     by section.
 
@@ -148,14 +148,14 @@ def show_dataset(data, labels, size=15, figsize=10, title=None, colormap='Set3',
     sections = np.unique(data[:, 0])
     n_sections = sections.shape[0]
     title, size = itemize(n_sections, title, size)
-    figsize, = itemize(2, figsize)
+    figsize, = itemize(2, figsize*n_sections)
     cmap = colormaps.get_cmap(colormap)
     norm = colors.Normalize(labels.min(), labels.max())
     fig, ax = plt.subplots(1, n_sections, figsize=figsize)
     axes = (ax,) if n_sections == 1 else ax
 
     for i, a, t, s in zip(sections, axes, title, size):
-        mask = data[:, 0].astype(np.int32) == i
+        mask = data[:, 0] == i
         a.scatter(*data[mask, 1:3].T, s=s, c=cmap(norm(labels[mask])))
         format_ax(a, t, aspect='equal', show_ax=show_ax)
 

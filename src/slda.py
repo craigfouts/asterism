@@ -10,18 +10,14 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 from util import set_seed
 
-def featurize(data, scale=1., n_neighbors=6):
-    """Creates spatially-smoothed features by applying a 2-D Gaussian filter to 
-    raw sample data.
+def featurize(data):
+    """Creates spatially-smoothed features by applying two Gaussian filters with
+    local density-based variances to the given raw data.
     
     Parameters
     ----------
     data : ndarray
         Sample dataset.
-    scale : float, default=1.0
-        Variance scale factor.
-    n_neighbors : int, default=6
-        Size of sample neighborhood.
 
     Returns
     -------
@@ -33,17 +29,30 @@ def featurize(data, scale=1., n_neighbors=6):
     features = []
 
     for s in sections:
-        mask = data[:, 0] == s
-        proximity = cdist(data[mask, 1:3], data[mask, 1:3], 'sqeuclidean')
-        variance = scale*np.sort(proximity, -1)[:, n_neighbors]
-        gaussian = np.exp(-proximity/(2*variance))/(np.sqrt(2*np.pi*variance))
-        features.append(gaussian@data[mask, 3:])
+        section = data[data[:, 0] == s]
+        proximity = cdist(section[:, 1:3], section[:, 1:3], 'sqeuclidean')
+        scale = np.sort(proximity, -1)[:, 1:5].mean(-1)
+        gaussian1 = np.exp(-proximity/(2*(.5*scale)**2))/np.sqrt(2*np.pi*(.5*scale)**2)
+        gaussian2 = np.exp(-proximity/(2*(1.*scale)**2))/np.sqrt(2*np.pi*(1.*scale)**2)
+        features.append(np.hstack([gaussian1@section[:, 3:], gaussian2@section[:, 3:]]))
 
     features = np.vstack(features)
 
+    # sections = np.unique(data[:, 0])
+    # features = []
+
+    # for s in sections:
+    #     mask = data[:, 0] == s
+    #     proximity = cdist(data[mask, 1:3], data[mask, 1:3], 'sqeuclidean')
+    #     variance = scale*np.sort(proximity, -1)[:, n_neighbors]
+    #     gaussian = np.exp(-proximity/(2*variance))/(np.sqrt(2*np.pi*variance))
+    #     features.append(gaussian@data[mask, 3:])
+
+    # features = np.vstack(features)
+
     return features
 
-def distribute(data, n_documents=None, scale=1., n_neighbors=6):
+def distribute(data, n_documents=None):
     """Uniformly distributes document locations proximally to sample locations
     and computes a local density-based variance for each document.
     
@@ -53,10 +62,6 @@ def distribute(data, n_documents=None, scale=1., n_neighbors=6):
         Sample dataset.
     n_documents : int, default=None
         Number of documents per section.
-    scale : float, default=1.0
-        Variance scale factor.
-    n_neighbors : int, default=6
-        Size of document neighborhood.
 
     Returns
     -------
@@ -68,18 +73,36 @@ def distribute(data, n_documents=None, scale=1., n_neighbors=6):
     documents = []
 
     for s in sections:
-        mask = data[:, 0] == s
+        section = data[data[:, 0] == s]
+        n_samples = section.shape[0]
 
         if n_documents is None:
-            n_documents = mask.sum()//4
+            n_documents = n_samples//4
 
-        idx = np.random.permutation(mask.sum())[:n_documents]
-        locs = data[mask, :3][idx]
-        proximity = cdist(locs[:, 1:], locs[:, 1:], 'sqeuclidean')
-        variance = scale*np.sort(proximity, -1)[:, n_neighbors]
-        documents.append(np.hstack([locs, variance[None].T]))
+        idx = np.random.permutation(n_samples)[:n_documents]
+        locations = section[idx, :3]
+        proximity = cdist(locations[:, 1:], locations[:, 1:], 'sqeuclidean')
+        scale = np.sort(proximity, -1)[:, 1:5].mean(-1)
+        documents.append(np.hstack([locations, 4*scale[None].T]))
 
     documents = np.vstack(documents)
+
+    # sections = np.unique(data[:, 0])
+    # documents = []
+
+    # for s in sections:
+    #     mask = data[:, 0] == s
+
+    #     if n_documents is None:
+    #         n_documents = mask.sum()//4
+
+    #     idx = np.random.permutation(mask.sum())[:n_documents]
+    #     locs = data[mask, :3][idx]
+    #     proximity = cdist(locs[:, 1:], locs[:, 1:], 'sqeuclidean')
+    #     variance = scale*np.sort(proximity, -1)[:, n_neighbors]
+    #     documents.append(np.hstack([locs, variance[None].T]))
+
+    # documents = np.vstack(documents)
 
     return documents
 
@@ -156,6 +179,7 @@ class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
         Location and variance of each document.
     corpus : ndarray
         Location and parameterization of each sample.
+        (section index, x-coordinate, y-coordinate, word assignment, document assignment, topic assignment)
     topics : ndarray
         Topic assignment history of each sample.
     document_counts : ndarray
@@ -214,6 +238,7 @@ class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
         ----------
         data : ndarray
             Sample dataset.
+            (section index, x-coordinate, y-coordinate, features...)
         n_steps : int, default=200
             Number of Gibbs sampling steps.
         burn_in : int, default=150

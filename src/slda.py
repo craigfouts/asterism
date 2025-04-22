@@ -217,9 +217,9 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         self.topics = None
         self.corpus = None
 
-        self.corpus = None
-        self.documents = None
-        self.topic_log = None
+        # self.corpus = None
+        # self.documents = None
+        # self.topic_log = None
 
         self.document_counts = None
         self.topic_counts = None

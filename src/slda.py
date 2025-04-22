@@ -106,17 +106,17 @@ def distribute(data, n_documents=None):
 
     return documents
 
-def shuffle(words, documents, n_topics=5, n_words=50, return_counts=False):
-    """Randomly initializes document and topic assignments for each sample.
-    
+def shuffle(words, n_topics=5, n_documents=250, n_words=50, return_counts=False):
+    """Randomly assigns a topic and document to each sample.
+        
     Parameters
     ----------
     words : ndarray
         Word assignment for each sample
-    documents : ndarray
-        Document data.
     n_topics : int, default=5
         Number of discoverable topics.
+    n_documents : int, default=250
+        Number of spatial documents.
     n_words : int, default=50
         Number of phenotypic words.
     return_counts : bool, default=False
@@ -125,32 +125,32 @@ def shuffle(words, documents, n_topics=5, n_words=50, return_counts=False):
     Returns
     -------
     ndarray
-        Document assignments.
-    ndarray
         Topic assignments.
     ndarray
-        Document-topic counts.
+        Document assignments.
     ndarray
         Topic-word counts.
+    ndarray
+        Document-topic counts.
     """
 
-    n_samples, n_documents = words.shape[0], documents.shape[0]
-    document_assignments = np.random.choice(n_documents, (n_samples, 1))
-    topic_assignments = np.random.choice(n_topics, (n_samples, 1))
+    n_samples = words.shape[0]
+    topics = np.random.choice(n_topics, n_samples)
+    documents = np.random.choice(n_documents, n_samples)
 
     if return_counts:
-        doc_range, topic_range = np.arange(n_documents), np.arange(n_topics)
-        doc_counts = (document_assignments == doc_range).T@np.eye(n_topics)[topic_assignments.T[0]]
-        topic_counts = (topic_assignments == topic_range).T@np.eye(n_words)[words]
+        topic_range, document_range = np.arange(n_topics), np.arange(n_documents)
+        topic_counts = (topics == topic_range[None].T)@np.eye(n_words)[words]
+        document_counts = (documents == document_range[None].T)@np.eye(n_topics)[topics]
 
-        return document_assignments, topic_assignments, doc_counts, topic_counts
+        return topics, documents, topic_counts, document_counts
     
-    return document_assignments, topic_assignments
+    return topics, documents
 
-class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
-    """Adaptation of spatial latent Dirichlet allocation for spatial point
-    cloud clustering. Based on the model proposed by Xiaogang Wang and Eric
-    Grimson.
+class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
+    """Adaptation of spatial latent Dirichlet allocation for point cloud 
+    clustering using collapsed Gibbs sampling. Based on the model proposed by 
+    Xiaogang Wang and Eric Grimson.
 
     https://papers.nips.cc/paper/3278-spatial-latent-dirichlet-allocation
 
@@ -162,92 +162,80 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         Number of documents per section.
     n_words : int, default=50
         Number of phenotypic words.
-    feature_scale : float, default=1.0
-        Feature smoothing scale factor.
     document_scale : float, default=1.0
         Document variance scale factor.
-    document_prior : float | ndarray, default=1.0
-        Document-topic distribution Dirichlet prior.
-    topic_prior : float | ndarray, default=1.0
-        Topic-word distribution Dirichlet prior.
+    word_scale : float, default=1.0
+        Word smoothing scale factor.
+    topic_prior : float, default=1.0
+        Topic distribution Dirichlet prior.
+    document_prior : float, default=1.0
+        Document distribution Dirichlet prior.
     seed : int, default=None
         Randome state seed.
 
     Attributes
     ----------
-    documents : ndarray
-        Location and variance of each document.
     corpus : ndarray
-        Location and parameterization of each sample.
-        (section index, x-coordinate, y-coordinate, word assignment, document assignment, topic assignment)
+        Section, coordinate, assignment values for each sample.
     topics : ndarray
-        Topic assignment history of each sample.
-    document_counts : ndarray
-        Document-topic counts.
+        Topic assignment history for each sample.
+    documents : ndarray
+        Section, coordinate, and variance values for each document.
     topic_counts : ndarray
-        Topic-word counts.
+        Word counts for each topic.
+    document_counts : ndarray
+        Topic counts for each document.
     likelihood_log : list
-        Record of the total likelihood computed at each step.
-    burn_in : int
-        Number of sampling steps to discard.
-    labels_ : 
-        Final topic assignments of each sample.
+        Record of the total likelihood for each update step.
+    labels_ : ndarray
+        Final topic assignments for each sample.
     
     Usage
     -----
     >>> model = SLDA(*args, **kwargs)
-    >>> topics = model.fit_predict(data, **kwargs)
+    >>> labels = model.fit_predict(data, **kwargs)
     >>> corpus = model.fit_transform(data, **kwargs)
     """
 
-    def __init__(self, n_topics=5, n_documents=None, n_words=25, feature_scale=1., document_scale=1., document_prior=1., topic_prior=1., seed=None):
+    def __init__(self, n_topics=5, n_documents=None, n_words=50, document_scale=1., word_scale=1., topic_prior=1., document_prior=1., seed=None):
         super().__init__()
         set_seed(seed)
 
         self.n_topics = n_topics
         self.n_documents = n_documents
         self.n_words = n_words
-        self.feature_scale = feature_scale
         self.document_scale = document_scale
-        self.document_prior = document_prior
+        self.word_scale = word_scale
         self.topic_prior = topic_prior
+        self.document_prior = document_prior
         self.seed = seed
 
-        self.documents = None
-        self.topics = None
         self.corpus = None
-
-        # self.corpus = None
-        # self.documents = None
-        # self.topic_log = None
-
-        self.document_counts = None
+        self.topics = None
+        self.documents = None
         self.topic_counts = None
+        self.document_counts = None
         self.likelihood_log = []
-        self.burn_in = 150
         self.labels_ = None
 
-    def _featurize(self, data):
-        return featurize(data, self.feature_scale)
-    
     def _distribute(self, data):
-        return distribute(data, self.n_documents, self.document_scale)
+        return distribute(data, self.n_documents)
+
+    def _featurize(self, data):
+        return featurize(data)
     
     def _shuffle(self, words):
-        return shuffle(words, self.documents, self.n_topics, self.n_words, return_counts=True)
+        return shuffle(words, self.n_topics, self.documents.shape[0], self.n_words, return_counts=True)
     
-    def build(self, data, n_steps=200, burn_in=150):
+    def build(self, data, n_steps=200):
         """Initializes model parameters and class attributes.
         
         Parameters
         ----------
         data : ndarray
-            Sample dataset.
-            (section index, x-coordinate, y-coordinate, features...)
+            Section, coordinate, and feature values for each sample.
         n_steps : int, default=200
             Number of Gibbs sampling steps.
-        burn_in : int, default=150
-            Number of sampling steps to discard.
 
         Returns
         -------
@@ -255,86 +243,120 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             I return therefore I am.
         """
 
-        n_samples, locations = data.shape[0], data[:, :3]
-        features, self.documents = self._featurize(data), self._distribute(data)
+        self.documents, features = self._distribute(data), self._featurize(data)
         words = KMeans(self.n_words).fit_predict(features)
-        documents, topics, self.document_counts, self.topic_counts = self._shuffle(words)
-        self.corpus = np.hstack([locations, words[None].T, documents, topics])
-        self.topics = np.zeros((n_steps, n_samples))
-        self.topics[-1:] = topics.T
-        self.burn_in = burn_in
+        topics, documents, self.topic_counts, self.document_counts = self._shuffle(words)
+        self.corpus = np.vstack([data[:, :3].T, topics, documents, words]).T
+        self.topics = np.zeros((n_steps, data.shape[0]))
+        self.topics[-1:] = topics
 
         return self
     
-    def decrement(self, word, document, topic):
-        """Decrements the given document-topic and topic-word counts.
-
-        Parameters
-        ----------
-        word : int
-            Word value.
-        document : int
-            Document assignment.
-        topic : int
-            Topic assignment.
-
-        Returns
-        -------
-        ndarray
-            Decremented document-topic counts.
-        ndarray
-            Decremented topic-word counts.
-        """
-
-        self.document_counts[document, topic] -= 1
-        self.topic_counts[topic, word] -= 1
-
-        return self.document_counts, self.topic_counts
-    
-    def increment(self, word, document, topic):
-        """Increments the given document-topic and topic-word counts.
+    def decrement(self, topic, document, word):
+        """Decrements the specified word and topic counts for the given topic
+        and document, respectively.
         
         Parameters
         ----------
-        word : int
-            Word value.
-        document : int
-            Document assignment.
         topic : int
             Topic assignment.
+        document : int
+            Document assignment.
+        word : int
+            Word value.
 
         Returns
         -------
         ndarray
-            Incremented document-topic counts.
+            Updated word counts for each topic.
         ndarray
-            Incremented topic-word counts.
+            Updated topic counts for each document.
         """
 
-        self.document_counts[document, topic] += 1
-        self.topic_counts[topic, word] += 1
+        self.topic_counts[topic, word] -= 1
+        self.document_counts[document, topic] -= 1
 
-        return self.document_counts, self.topic_counts
+        return self.topic_counts, self.document_counts
     
-    def sample_document(self, location, topic, return_distribution=False):
-        """Samples a document assignment based on spatial location and topic
-        assignment.
+    def increment(self, topic, document, word):
+        """Increments the specified word and topic counts for the given topic
+        and document, respectively.
+                
+        Parameters
+        ----------
+        topic : int
+            Topic assignment.
+        document : int
+            Document assignment.
+        word : int
+            Word value.
+
+        Returns
+        -------
+        ndarray
+            Updated word counts for each topic.
+        ndarray
+            Updated topic counts for each document.
+        """
+
+        self.topic_counts[topic, word] += 1
+        self.document_counts[document, topic] += 1
+
+        return self.topic_counts, self.document_counts
+    
+    def sample_topic(self, document, word, return_likelihood=False):
+        """Samples a topic assignment based on the given document and word
+        assignments.
+        
+        Parameters
+        ----------
+        document : int
+            Document assignment.
+        word : int
+            Word value.
+        return_likelihood : bool, default=False
+            Whether to return the assignment likelihood.
+
+        Returns
+        -------
+        int
+            Topic assignment.
+        ndarray
+            Assignment likelihood.
+        """
+
+        topic_distribution = self.document_counts[document] + self.document_prior
+        topic_distribution /= topic_distribution.sum()
+        word_distribution = self.topic_counts[:, word] + self.topic_prior
+        word_distribution /= (self.topic_counts + self.topic_prior).sum(-1)
+        distribution = topic_distribution*word_distribution
+        distribution /= distribution.sum()
+        topic = np.random.choice(self.n_topics, p=distribution)
+
+        if return_likelihood:
+            return topic, distribution[topic]
+        
+        return topic
+    
+    def sample_document(self, location, topic, return_likelihood=False):
+        """Samples a document assignment based on the given spatial location and 
+        topic assignment.
         
         Parameters
         ----------
         location : ndarray
-            Section index and spatial coordinates.
+            Section and coordinate values for a sample.
         topic : int
             Topic assignment.
-        return_distribution : bool, default=False
-            Whether to return document probabilities.
+        return_likelihood : bool, default=False
+            Whether to return the assignment likelihood.
 
         Returns
         -------
         int
             Document assignment.
         ndarray
-            Document probabilities.
+            Assignment likelihood.
         """
 
         mask = self.documents[:, 0] == location[0]
@@ -346,90 +368,19 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         distribution /= distribution.sum()
         document = np.random.choice(mask.sum(), p=distribution)
 
-        if return_distribution:
-            return document, distribution
+        if return_likelihood:
+            return document, distribution[document]
         
         return document
     
-    def sample_topic(self, word, document, return_distribution=False):
-        """Samples a topic assignment based on word value and document
-        assignment.
-        
-        Parameters
-        ----------
-        word : int
-            Word value.
-        document : int
-            Document assignment.
-        return_distribution : bool, default=False
-            Whether to return topic probabilities.
-
-        Returns
-        -------
-        int
-            Topic assignment
-        ndarray
-            Topic probabilities.
-        """
-
-        topic_distribution = self.document_counts[document] + self.document_prior
-        topic_distribution /= (self.document_counts[document] + self.document_prior).sum()
-        word_distribution = self.topic_counts[:, word] + self.topic_prior
-        word_distribution /= (self.topic_counts + self.topic_prior).sum(-1)
-        distribution = topic_distribution*word_distribution
-        distribution /= distribution.sum()
-        topic = np.random.choice(self.n_topics, p=distribution)
-
-        if return_distribution:
-            return topic, distribution
-        
-        return topic
-    
-    def sample(self, location, word, document, topic, return_likelihood=False):
-        """Samples new document and topic assignments based on location and 
-        current assignments.
-        
-        Parameters
-        ----------
-        location : ndarray
-            Section index and spatial coordinates.
-        word : int
-            Word value.
-        document : int
-            Current document assignment.
-        topic : int
-            Current topic assignment.
-        return_likelihood : bool, default=False
-            Whether to return the assignment likelihood.
-
-        Returns
-        -------
-        int
-            New document assignment.
-        int
-            New topic assignment.
-        float
-            Assignment likelihood.
-        """
-
-        new_document = self.sample_document(location, topic, return_likelihood)
-        new_topic = self.sample_topic(word, document, return_likelihood)
-
-        if return_likelihood:
-            likelihood = new_document[1][new_document[0]] + new_topic[1][new_topic[0]]
-
-            return new_document[0], new_topic[0], likelihood
-        
-        return new_document, new_topic
-    
-    def update(self, step_n, sample):
-        """Updates the given sample's document and topic assignments based on
-        the previous step using Gibbs sampling.
+    def update(self, step, sample):
+        """Updates the given sample's topic and document assignments based on
+        the current assignments.
 
         Parameters
         ----------
         step_n : int
-            Gibbs sampling step number.
+            Gibbs sampling step.
         sample : int
             Sample index.
 
@@ -439,23 +390,25 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             Assignment likelihood.
         """
 
-        location, (word, document, topic) = self.corpus[sample, :3], self.corpus[sample, 3:].astype(np.int32)
-        self.decrement(word, document, topic)
-        document, topic, likelihood = self.sample(location, word, document, topic, return_likelihood=True)
-        self.increment(word, document, topic)
-        self.corpus[sample, -2], self.corpus[sample, -1] = document, topic
-        self.topics[step_n, sample] = topic
+        location, (topic, document, word) = self.corpus[sample, :3], self.corpus[sample, 3:].astype(np.int32)
+        self.decrement(topic, document, word)
+        new_topic, topic_likelihood = self.sample_topic(document, word, return_likelihood=True)
+        new_document, document_likelihood = self.sample_document(location, topic, return_likelihood=True)
+        likelihood = topic_likelihood + document_likelihood
+        self.increment(new_topic, new_document, word)
+        self.corpus[sample, 3], self.corpus[sample, 4] = new_topic, new_document
+        self.topics[step, sample] = new_topic
 
         return likelihood
     
-    def step(self, step_n):
+    def step(self, step):
         """Performs a Gibbs sampling update for each sample and returns the 
         total step likelihood.
         
         Parameters
         ----------
-        step_n : int
-            Gibbs sampling step number.
+        step : int
+            Gibbs sampling step.
 
         Returns
         -------
@@ -463,23 +416,22 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             Total step likelihood.
         """
 
-        n_samples = self.corpus.shape[0]
-        samples = np.random.permutation(n_samples)
+        samples = np.random.permutation(self.corpus.shape[0])
         likelihood = 0
 
         for s in samples:
-            likelihood += self.update(step_n, s)
+            likelihood += self.update(step, s)
 
         return likelihood
     
     def fit(self, data, n_steps=200, burn_in=150, description='SLDA', verbosity=1):
-        """Obtains document and topic assignments for each sample based on its 
-        spatial location and featurization.
+        """Computes topic and document assignments for each sample using
+        collapsed Gibbs sampling.
 
         Parameters
         ----------
         data : ndarray
-            Sample dataset.
+            Section, coordinate, and feature values for each sample.
         n_steps : int, default=200
             Number of Gibbs sampling steps.
         burn_in : int, default=150
@@ -495,18 +447,19 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             I return therefore I am.
         """
 
-        self.build(data, n_steps, burn_in)
+        self.build(data, n_steps)
 
         for i in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
             likelihood = self.step(i)
             self.likelihood_log.append(likelihood)
 
-        self.labels_, _ = stats.mode(self.topics[self.burn_in:], 0)
+        self.labels_, _ = stats.mode(self.topics[burn_in:], 0)
 
         return self
     
     def transform(self, _=None):
-        """Returns the location and parameterization of each sample.
+        """Returns the section, coordinate, topic, document, and word values for
+        each sample.
         
         Parameters
         ----------
@@ -515,7 +468,7 @@ class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         Returns
         -------
         ndarray
-            Location and parameterization of each sample.
+            Section, coordinate, and assignment values for each sample.
         """
 
         return self.corpus

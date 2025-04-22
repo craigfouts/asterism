@@ -36,7 +36,7 @@ def shuffle(documents, words, n_topics=5, n_words=50, return_counts=False):
         Document assignment counts.
     """
     
-    n_samples, n_documents = documents.shape[0], np.unique(documents).shape[0]
+    n_samples, n_documents = words.shape[0], np.unique(documents).shape[0]
     topics = np.random.choice(n_topics, n_samples)
 
     if return_counts:
@@ -71,7 +71,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     Attributes
     ----------
     corpus : ndarray
-        topic, document, and word assignments for each sample.
+        Assignment values for each sample.
     topics : ndarray
         Topic assignment history for each sample.
     topic_counts : ndarray
@@ -80,10 +80,12 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         Topic counts for each document.
     likelihood_log : list
         Record of the total likelihood of each update step.
+    labels_ : ndarray
+        Final topic assignments for each sample.
 
     Usage
     -----
-    >>> model = LDA(*args, **kwargs)
+    >>> model = GibbsLDA(*args, **kwargs)
     >>> labels = model.fit_predict(data, **kwargs)
     >>> corpus = model.fit_transform(data, **kwargs)
     """
@@ -114,7 +116,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         Parameters
         ----------
         data : ndarray
-            Sample dataset.
+            Section and feature values for each sample.
         n_steps : int, default=200
             Number of Gibbs sampling steps.
 
@@ -124,12 +126,11 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             I return therefore I am.
         """
         
-        n_samples = data.shape[0]
         documents, features = data[:, 0].astype(np.int32), data[:, 1:]
         words = KMeans(self.n_words).fit_predict(features)
         topics, self.topic_counts, self.document_counts = self._shuffle(documents, words)
         self.corpus = np.vstack([topics, documents, words]).T
-        self.topics = np.zeros((n_steps, n_samples))
+        self.topics = np.zeros((n_steps, data.shape[0]))
         self.topics[-1:] = topics
 
         return self
@@ -174,7 +175,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return self.topic_counts
     
-    def sample(self, document, word, return_likelihood=False):
+    def sample_topic(self, document, word, return_likelihood=False):
         """Samples a topic assignment based on the given document and word
         assignments.
         
@@ -227,7 +228,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         
         topic, document, word = self.corpus[sample]
         self.decrement(topic, word)
-        topic, likelihood = self.sample(document, word, return_likelihood=True)
+        topic, likelihood = self.sample_topic(document, word, return_likelihood=True)
         self.increment(topic, word)
         self.corpus[sample, 0] = topic
         self.topics[step, sample] = topic
@@ -249,8 +250,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             Total step likelihood.
         """
 
-        n_samples = self.corpus.shape[0]
-        samples = np.random.permutation(n_samples)
+        samples = np.random.permutation(self.corpus.shape[0])
         likelihood = 0
 
         for s in samples:
@@ -265,11 +265,11 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         Parameters
         ----------
         data : ndarray
-            Sample dataset.
+            Section and feature values for each sample.
         n_steps : int, default=200
             Number of Gibbs sampling steps.
         burn_in : int, default=150
-            Number of steps to discard.
+            Number of sampling steps to discard.
         description : str, default='LDA'
             Model description.
         verbosity : int, default=1
@@ -290,7 +290,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         self.labels_, _ = stats.mode(self.topics[burn_in:], 0)
 
     def transform(self, _=None):
-        """Returns the topic, document, and word assignments for each sample.
+        """Returns the assignment values for each sample.
         
         Parameters
         ----------
@@ -299,7 +299,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         Returns
         -------
         ndarray
-            Topic, document, and word assignments for each sample.
+            Assignment values for each sample.
         """
         
         return self.corpus

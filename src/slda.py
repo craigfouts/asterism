@@ -147,7 +147,7 @@ def shuffle(words, documents, n_topics=5, n_words=50, return_counts=False):
     
     return document_assignments, topic_assignments
 
-class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
+class SLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     """Adaptation of spatial latent Dirichlet allocation for spatial point
     cloud clustering. Based on the model proposed by Xiaogang Wang and Eric
     Grimson.
@@ -200,7 +200,7 @@ class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
     >>> corpus = model.fit_transform(data, **kwargs)
     """
 
-    def __init__(self, n_topics=5, n_documents=None, n_words=50, feature_scale=1., document_scale=1., document_prior=1., topic_prior=1., seed=None):
+    def __init__(self, n_topics=5, n_documents=None, n_words=25, feature_scale=1., document_scale=1., document_prior=1., topic_prior=1., seed=None):
         super().__init__()
         set_seed(seed)
 
@@ -216,10 +216,15 @@ class SLDA(BaseEstimator, TransformerMixin, ClusterMixin):
         self.documents = None
         self.topics = None
         self.corpus = None
+
+        self.corpus = None
+        self.documents = None
+        self.topic_log = None
+
         self.document_counts = None
         self.topic_counts = None
         self.likelihood_log = []
-        self.burn_in = 400
+        self.burn_in = 150
         self.labels_ = None
 
     def _featurize(self, data):

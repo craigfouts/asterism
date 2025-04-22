@@ -116,6 +116,16 @@ class MLP(nn.Module):
     def __init__(self, layers, bias=True, final_bias=True, batch_norm=False, final_norm=False, activation='relu', final_act=None, dropout=0., final_drop=0.):
         super().__init__()
 
+        self.layers = layers
+        self.bias = bias
+        self.final_bias = final_bias
+        self.batch_norm = batch_norm
+        self.final_norm = final_norm
+        self.activation = activation
+        self.final_act = final_act
+        self.dropout = dropout
+        self.final_drop = final_drop
+
         self.net = nn.Sequential(*list(mlp(layers, bias, final_bias, batch_norm, final_norm, activation, final_act, dropout, final_drop)))
 
     def forward(self, x):

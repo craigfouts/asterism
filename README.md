@@ -1,2 +1,2 @@
 # hot-topic
-Project Hot Topic
+Methods for interpretable point cloud clustering.

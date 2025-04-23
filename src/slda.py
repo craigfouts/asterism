@@ -157,7 +157,7 @@ def shuffle(words, n_topics=5, n_documents=200, n_words=40, return_counts=False)
 
 class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     """Adaptation of spatial latent Dirichlet allocation for point cloud 
-    clustering using collapsed Gibbs sampling. Based on the model proposed by 
+    clustering using collapsed Gibbs sampling. Based on methods proposed by 
     Xiaogang Wang and Eric Grimson.
 
     https://papers.nips.cc/paper/3278-spatial-latent-dirichlet-allocation

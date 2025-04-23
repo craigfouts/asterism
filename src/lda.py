@@ -49,9 +49,9 @@ def shuffle(documents, words, n_topics=5, n_words=20, return_counts=False):
     return topics
 
 class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
-    """Adaptation of latent Dirichlat allocation for point cloud clustering
-    using collapsed Gibbs sampling. Based on the model proposed by David Blei, 
-    et al. 
+    """Adaptation of latent Dirichlet allocation for point cloud clustering
+    using collapsed Gibbs sampling. Based on methods proposed by David Blei,
+    Andrew Ng, and Michael Jordan.
 
     https://papers.nips.cc/paper/2070-latent-dirichlet-allocation
 

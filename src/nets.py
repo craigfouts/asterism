@@ -108,7 +108,7 @@ class MLP(nn.Module):
 
     Usage
     -----
-    >>> layers = (100, 250, 100)
+    >>> layers = (input_dim, hidden_dim, ..., output_dim)
     >>> mlp = MLP(layers, *args, **kwargs)
     >>> output = mlp(input)
     """
@@ -129,7 +129,7 @@ class MLP(nn.Module):
         self.net = nn.Sequential(*list(mlp(layers, bias, final_bias, batch_norm, final_norm, activation, final_act, dropout, final_drop)))
 
     def forward(self, x):
-        """Performs a single forward pass of the network.
+        """Performs a single forward pass through the network.
         
         Parameters
         ----------

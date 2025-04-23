@@ -10,7 +10,7 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 from util import set_seed
 
-def distribute(data, n_documents=None, scale=1., n_neighbors=6):
+def distribute(data, n_documents=None, scale=1., n_neighbors=4):
     """Uniformly distributes document locations proximally to sample locations
     and computes a local density-based variance for each document.
     
@@ -22,7 +22,7 @@ def distribute(data, n_documents=None, scale=1., n_neighbors=6):
         Number of documents per section.
     scale : float, default=1.0
         Variance scale factor.
-    n_neighbors : int, default=6
+    n_neighbors : int, default=4
         Size of local neighborhood.
 
     Returns
@@ -68,7 +68,7 @@ def distribute(data, n_documents=None, scale=1., n_neighbors=6):
 
     return documents
 
-def featurize(data, scale=1., n_neighbors=6):
+def featurize(data, scale=1., n_neighbors=4):
     """Creates spatially-smoothed features by applying two Gaussian filters with
     local density-based variances to the given raw data.
     
@@ -78,7 +78,7 @@ def featurize(data, scale=1., n_neighbors=6):
         Sample dataset.
     scale : float, default=1.0
         Smoothing scale factor.
-    n_neighbors : int, default=6
+    n_neighbors : int, default=4
         Size of local neighborhood.
 
     Returns
@@ -114,7 +114,7 @@ def featurize(data, scale=1., n_neighbors=6):
 
     return features
 
-def shuffle(words, n_topics=5, n_documents=250, n_words=50, return_counts=False):
+def shuffle(words, n_topics=5, n_documents=200, n_words=40, return_counts=False):
     """Randomly assigns a topic and document to each sample.
         
     Parameters
@@ -123,9 +123,9 @@ def shuffle(words, n_topics=5, n_documents=250, n_words=50, return_counts=False)
         Word assignment for each sample
     n_topics : int, default=5
         Number of discoverable topics.
-    n_documents : int, default=250
+    n_documents : int, default=200
         Number of spatial documents.
-    n_words : int, default=50
+    n_words : int, default=40
         Number of phenotypic words.
     return_counts : bool, default=False
         Whether to return assignment counts.
@@ -168,7 +168,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         Number of discoverable topics.
     n_documents : int | tuple | list, default=None
         Number of documents per section.
-    n_words : int, default=50
+    n_words : int, default=40
         Number of phenotypic words.
     document_scale : float, default=1.0
         Document variance scale factor.
@@ -205,7 +205,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     >>> corpus = model.fit_transform(data, **kwargs)
     """
 
-    def __init__(self, n_topics=5, n_documents=None, n_words=50, document_scale=1., word_scale=1., topic_prior=1., document_prior=1., seed=None):
+    def __init__(self, n_topics=5, n_documents=None, n_words=40, document_scale=1., word_scale=1., topic_prior=1., document_prior=1., seed=None):
         super().__init__()
         set_seed(seed)
 

@@ -10,7 +10,7 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 from util import set_seed
 
-def shuffle(documents, words, n_topics=5, n_words=50, return_counts=False):
+def shuffle(documents, words, n_topics=5, n_words=20, return_counts=False):
     """Randomly assigns a topic to each sample.
     
     Parameters
@@ -21,7 +21,7 @@ def shuffle(documents, words, n_topics=5, n_words=50, return_counts=False):
         Word assignment for each sample.
     n_topics : int, default=5
         Number of discoverable topics.
-    n_words : int, default=50
+    n_words : int, default=20
         Number of phenotypic words.
     return_counts : bool, default=False
         Whether to return assignment counts.
@@ -59,7 +59,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     ----------
     n_topics : int, default=5
         Number of discoverable topics.
-    n_words : int, default=50
+    n_words : int, default=20
         Number of phenotypic words.
     topic_prior : float, default=1.0
         Topic distribution Dirichlet prior.
@@ -90,7 +90,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     >>> corpus = model.fit_transform(data, **kwargs)
     """
     
-    def __init__(self, n_topics=5, n_words=50, topic_prior=1., document_prior=1., seed=None):
+    def __init__(self, n_topics=5, n_words=20, topic_prior=1., document_prior=1., seed=None):
         super().__init__()
         set_seed(seed)
 

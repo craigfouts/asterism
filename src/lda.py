@@ -66,7 +66,7 @@ class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     document_prior : float, default=1.0
         Document distribution Dirichlet prior.
     seed : int, default=None
-        Raneom state seed.
+        Random state seed.
 
     Attributes
     ----------

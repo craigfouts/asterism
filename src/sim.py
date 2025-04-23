@@ -53,7 +53,7 @@ def make_blocks(template='polygons', block_size=5):
 
     return locs, labels
 
-def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1.):
+def make_data(template='polygons', block_size=10, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1.):
     """Generates sample locations, labels, and features based on the given block
     template and feature parameterization.
     
@@ -94,7 +94,7 @@ def make_data(template='polygons', block_size=5, n_features=100, n_equivocal=0, 
 
     return data, labels
 
-def make_dataset(template='polygons', block_size=5, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1., wiggle=0., mix=0., return_tensor=False):
+def make_dataset(template='polygons', block_size=10, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1., wiggle=0., mix=0., return_tensor=False):
     """Generates a sample dataset based on the given block template and feature
     parameterization.
     

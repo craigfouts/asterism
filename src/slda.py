@@ -10,49 +10,7 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 from util import set_seed
 
-def featurize(data):
-    """Creates spatially-smoothed features by applying two Gaussian filters with
-    local density-based variances to the given raw data.
-    
-    Parameters
-    ----------
-    data : ndarray
-        Sample dataset.
-
-    Returns
-    -------
-    ndarray
-        Smoothed sample features.  
-    """
-
-    sections = np.unique(data[:, 0])
-    features = []
-
-    for s in sections:
-        section = data[data[:, 0] == s]
-        proximity = cdist(section[:, 1:3], section[:, 1:3], 'sqeuclidean')
-        scale = np.sort(proximity, -1)[:, 1:5].mean(-1)
-        gaussian1 = np.exp(-proximity/(2*(.5*scale)**2))/np.sqrt(2*np.pi*(.5*scale)**2)
-        gaussian2 = np.exp(-proximity/(2*(1.*scale)**2))/np.sqrt(2*np.pi*(1.*scale)**2)
-        features.append(np.hstack([gaussian1@section[:, 3:], gaussian2@section[:, 3:]]))
-
-    features = np.vstack(features)
-
-    # sections = np.unique(data[:, 0])
-    # features = []
-
-    # for s in sections:
-    #     mask = data[:, 0] == s
-    #     proximity = cdist(data[mask, 1:3], data[mask, 1:3], 'sqeuclidean')
-    #     variance = scale*np.sort(proximity, -1)[:, n_neighbors]
-    #     gaussian = np.exp(-proximity/(2*variance))/(np.sqrt(2*np.pi*variance))
-    #     features.append(gaussian@data[mask, 3:])
-
-    # features = np.vstack(features)
-
-    return features
-
-def distribute(data, n_documents=None):
+def distribute(data, n_documents=None, scale=1., n_neighbors=6):
     """Uniformly distributes document locations proximally to sample locations
     and computes a local density-based variance for each document.
     
@@ -62,6 +20,10 @@ def distribute(data, n_documents=None):
         Sample dataset.
     n_documents : int, default=None
         Number of documents per section.
+    scale : float, default=1.0
+        Variance scale factor.
+    n_neighbors : int, default=6
+        Size of local neighborhood.
 
     Returns
     -------
@@ -73,17 +35,16 @@ def distribute(data, n_documents=None):
     documents = []
 
     for s in sections:
-        section = data[data[:, 0] == s]
-        n_samples = section.shape[0]
+        mask = data[:, 0] == s
 
         if n_documents is None:
-            n_documents = n_samples//4
+            n_documents = mask.sum()//4
 
-        idx = np.random.permutation(n_samples)[:n_documents]
-        locations = section[idx, :3]
-        proximity = cdist(locations[:, 1:], locations[:, 1:], 'sqeuclidean')
-        scale = np.sort(proximity, -1)[:, 1:5].mean(-1)
-        documents.append(np.hstack([locations, 4*scale[None].T]))
+        idx = np.random.permutation(mask.sum())[:n_documents]
+        locs = data[mask, :3][idx]
+        proximity = cdist(locs[:, 1:], locs[:, 1:], 'sqeuclidean')
+        variance = scale*np.sort(proximity, -1)[:, n_neighbors]
+        documents.append(np.hstack([locs, variance[None].T]))
 
     documents = np.vstack(documents)
 
@@ -91,20 +52,67 @@ def distribute(data, n_documents=None):
     # documents = []
 
     # for s in sections:
-    #     mask = data[:, 0] == s
+    #     section = data[data[:, 0] == s]
+    #     n_samples = section.shape[0]
 
     #     if n_documents is None:
-    #         n_documents = mask.sum()//4
+    #         n_documents = n_samples//4
 
-    #     idx = np.random.permutation(mask.sum())[:n_documents]
-    #     locs = data[mask, :3][idx]
-    #     proximity = cdist(locs[:, 1:], locs[:, 1:], 'sqeuclidean')
-    #     variance = scale*np.sort(proximity, -1)[:, n_neighbors]
-    #     documents.append(np.hstack([locs, variance[None].T]))
+    #     idx = np.random.permutation(n_samples)[:n_documents]
+    #     locations = section[idx, :3]
+    #     proximity = cdist(locations[:, 1:], locations[:, 1:], 'sqeuclidean')
+    #     scale = np.sort(proximity, -1)[:, 1:5].mean(-1)
+    #     documents.append(np.hstack([locations, 4*scale[None].T]))
 
     # documents = np.vstack(documents)
 
     return documents
+
+def featurize(data, scale=1., n_neighbors=6):
+    """Creates spatially-smoothed features by applying two Gaussian filters with
+    local density-based variances to the given raw data.
+    
+    Parameters
+    ----------
+    data : ndarray
+        Sample dataset.
+    scale : float, default=1.0
+        Smoothing scale factor.
+    n_neighbors : int, default=6
+        Size of local neighborhood.
+
+    Returns
+    -------
+    ndarray
+        Smoothed sample features. 
+    """
+
+    sections = np.unique(data[:, 0])
+    features = []
+
+    for s in sections:
+        mask = data[:, 0] == s
+        proximity = cdist(data[mask, 1:3], data[mask, 1:3], 'sqeuclidean')
+        variance = scale*np.sort(proximity, -1)[:, n_neighbors]
+        gaussian = np.exp(-proximity/(2*variance))/(np.sqrt(2*np.pi*variance))
+        features.append(gaussian@data[mask, 3:])
+
+    features = np.vstack(features)
+
+    # sections = np.unique(data[:, 0])
+    # features = []
+
+    # for s in sections:
+    #     section = data[data[:, 0] == s]
+    #     proximity = cdist(section[:, 1:3], section[:, 1:3], 'sqeuclidean')
+    #     scale = np.sort(proximity, -1)[:, 1:5].mean(-1)
+    #     gaussian1 = np.exp(-proximity/(2*(.5*scale)**2))/np.sqrt(2*np.pi*(.5*scale)**2)
+    #     gaussian2 = np.exp(-proximity/(2*(1.*scale)**2))/np.sqrt(2*np.pi*(1.*scale)**2)
+    #     features.append(np.hstack([gaussian1@section[:, 3:], gaussian2@section[:, 3:]]))
+
+    # features = np.vstack(features)
+
+    return features
 
 def shuffle(words, n_topics=5, n_documents=250, n_words=50, return_counts=False):
     """Randomly assigns a topic and document to each sample.
@@ -171,12 +179,12 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     document_prior : float, default=1.0
         Document distribution Dirichlet prior.
     seed : int, default=None
-        Randome state seed.
+        Random state seed.
 
     Attributes
     ----------
     corpus : ndarray
-        Section, coordinate, assignment values for each sample.
+        Section, coordinate, and assignment values for each sample.
     topics : ndarray
         Topic assignment history for each sample.
     documents : ndarray
@@ -192,7 +200,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     
     Usage
     -----
-    >>> model = SLDA(*args, **kwargs)
+    >>> model = GibbsSLDA(*args, **kwargs)
     >>> labels = model.fit_predict(data, **kwargs)
     >>> corpus = model.fit_transform(data, **kwargs)
     """
@@ -219,10 +227,10 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         self.labels_ = None
 
     def _distribute(self, data):
-        return distribute(data, self.n_documents)
+        return distribute(data, self.n_documents, self.document_scale)
 
     def _featurize(self, data):
-        return featurize(data)
+        return featurize(data, self.word_scale)
     
     def _shuffle(self, words):
         return shuffle(words, self.n_topics, self.documents.shape[0], self.n_words, return_counts=True)

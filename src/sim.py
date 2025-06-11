@@ -140,11 +140,20 @@ def make_dataset(template='polygons', block_size=10, n_features=100, n_equivocal
 
     return data, labels
 
-class DataMaker:
-    def __init__(self, **kwargs):
+class DataMaker:  # TODO: get rid of "section" columns
+    def __init__(self, template='polygons', n_features=100, batch_size=1, **kwargs):
+        self.template = template
+        self.n_features = n_features
+        self.batch_size = batch_size
         self.kwargs = kwargs
-    
-    def make(self):
-        data = make_dataset(**self.kwargs)
 
-        return data
+    def make(self, batch_size=None, return_locations=False):
+        if batch_size is None:
+            batch_size = self.batch_size
+
+        template = (self.template,)*batch_size
+        data, labels = make_dataset(template=template, n_features=self.n_features, **self.kwargs)
+        data = data.reshape(batch_size, data.shape[0]//batch_size, data.shape[-1])[..., 1 + 2*(not return_locations):]
+        labels = labels[:data.shape[1]]
+
+        return data, labels

@@ -221,11 +221,11 @@ class NCP(nn.Module):
 
         return nll.item()
     
-    def fit(self, generator, n_steps=200, n_permutations=6, learning_rate=1e-4, weight_decay=1e-2, verbosity=1, description='NCP'):
-        self.build(generator.x_dim, learning_rate, weight_decay)
+    def fit(self, data_maker, n_steps=400, n_permutations=6, learning_rate=1e-4, weight_decay=1e-2, verbosity=1, description='NCP'):
+        self.build(data_maker.n_features, learning_rate, weight_decay)
 
         for _ in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
-            (data, labels), nll = generator.generate(return_tensor=True), 0
+            (data, labels), nll = data_maker.make(), 0
 
             for _ in range(n_permutations):
                 nll += self.evaluate(*shuffle(data, labels, sort=True), grad=True)

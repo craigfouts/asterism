@@ -5,7 +5,7 @@ Craig Fouts (craig.fouts@uu.igp.se)
 import numpy as np
 from sklearn.datasets import make_classification
 import torch
-from util import itemize
+from utils import itemize
 
 CHECKERS = np.array([[0, 1, 0],
                      [1, 0, 1],
@@ -139,3 +139,12 @@ def make_dataset(template='polygons', block_size=10, n_features=100, n_equivocal
         data, labels = torch.tensor(data, dtype=torch.float32), torch.tensor(labels, dtype=torch.int32)
 
     return data, labels
+
+class DataMaker:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+    
+    def make(self):
+        data = make_dataset(**self.kwargs)
+
+        return data

@@ -8,7 +8,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
 from tqdm import tqdm
-from util import set_seed
+from utils import set_seed
 
 def distribute(data, n_documents=None, scale=1., n_neighbors=4):
     """Uniformly distributes document locations proximally to sample locations

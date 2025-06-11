@@ -7,7 +7,7 @@ from scipy import stats
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
 from tqdm import tqdm
-from util import set_seed
+from utils import set_seed
 
 def shuffle(documents, words, n_topics=5, n_words=20, return_counts=False):
     """Randomly assigns a topic to each sample.

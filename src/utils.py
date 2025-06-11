@@ -8,6 +8,7 @@ import os
 import pyro
 import random
 import torch
+import torch.nn.functional as F
 from matplotlib import cm, colormaps, colors
 from scipy.optimize import linear_sum_assignment
 from sklearn.metrics import confusion_matrix
@@ -84,6 +85,28 @@ def map_labels(targets, predictions):
     
     return labels
 
+def relabel(labels):
+    if type(labels) == torch.Tensor:
+        topics, inverse = labels.unique(return_inverse=True)
+    else:
+        topics, inverse = np.unique(labels, return_inverse=True)
+
+    _, mapping = linear_sum_assignment(F.one_hot(inverse), maximize=True)
+    labels = (labels[None, :] == topics[mapping][:, None]).int().argmax(0)
+
+    return labels
+
+def shuffle(data, labels=None, sort=False):
+    mask = torch.randperm(data.shape[-2])
+    data = data[:, mask] if len(data.shape) > 2 else data[mask]
+
+    if labels is not None:
+        labels = relabel(labels[mask]) if sort else labels[mask]
+
+        return data, labels
+    
+    return data
+
 def format_ax(ax, title=None, aspect='equal', show_ax=True):
     """Formats the given Matplotlib axis in place by setting the title, aspect 
     scaling, and axes visibility.
@@ -115,7 +138,23 @@ def format_ax(ax, title=None, aspect='equal', show_ax=True):
 
     return ax
 
-def show_dataset(data, labels, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
+def make_figure(n_sections=1, figsize=5, colormap=None, labels=None):
+    fig, ax = plt.subplots(1, n_sections, figsize=figsize)
+    axes = (ax,) if n_sections == 1 else ax
+
+    if colormap is not None:
+        cmap = colormaps.get_cmap(colormap)
+
+        if labels is not None:
+            norm = colors.Normalize(labels.min(), labels.max())
+
+            return fig, axes, cmap, norm
+        
+        return fig, axes, cmap
+
+    return fig, axes
+
+def show_dataset(data, labels, sectioned=False, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
     """Displays scatter plot(s) of sample points colored by label and separated
     by section.
 
@@ -125,6 +164,8 @@ def show_dataset(data, labels, size=15, figsize=5, title=None, colormap='Set3', 
         Sample dataset.
     labels : ndarray
         Sample labels.
+    sectioned : bool, default=False
+        Whether the dataset includes a section column.
     size : int, default=15
         Sample point size.
     figsize : int | tuple | list, default=10
@@ -145,17 +186,17 @@ def show_dataset(data, labels, size=15, figsize=5, title=None, colormap='Set3', 
     None
     """
 
+    if not sectioned:
+        data = np.hstack((np.zeros((data.shape[0], 1)), data))
+
     sections = np.unique(data[:, 0])
     n_sections = sections.shape[0]
     title, size = itemize(n_sections, title, size)
     figsize, = itemize(2, figsize*n_sections)
-    cmap = colormaps.get_cmap(colormap)
-    norm = colors.Normalize(labels.min(), labels.max())
-    fig, ax = plt.subplots(1, n_sections, figsize=figsize)
-    axes = (ax,) if n_sections == 1 else ax
+    fig, axes, cmap, norm = make_figure(n_sections, figsize, colormap, labels)
 
     for i, a, t, s in zip(sections, axes, title, size):
-        mask = data[:, 0] == i
+        mask = data[:, 0] == i 
         a.scatter(*data[mask, 1:3].T, s=s, c=cmap(norm(labels[mask])))
         format_ax(a, t, aspect='equal', show_ax=show_ax)
 

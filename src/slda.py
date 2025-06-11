@@ -201,7 +201,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     Usage
     -----
     >>> model = GibbsSLDA(*args, **kwargs)
-    >>> labels = model.fit_predict(data, **kwargs)
+    >>> predictions = model.fit_predict(data, **kwargs)
     >>> corpus = model.fit_transform(data, **kwargs)
     """
 

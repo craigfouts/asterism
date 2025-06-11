@@ -1,145 +1,90 @@
 import torch.nn as nn
 
+NORMALIZATION = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}
 ACTIVATION = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus}
 
-def layer(input_dim, output_dim, bias=True, batch_norm=False, activation='relu', dropout=0., **kwargs):
-    """Constructs a neural network layer with optional batch normalization, 
-    activation, and dropout.
+class MLP(nn.Sequential):
+    """Implementation of a multilayer perceptron
     
     Parameters
     ----------
-    input_dim : int
-        Input dimensionality.
-    output_dim : int
-        Output dimensionality.
-    bias : bool, default=True
-        Whether to include a bias term.
-    batch_norm : bool, default=False
-        Whether to include batch normalization.
-    activation : str, default='relu'
-        Activation function.
-    dropout : float, default=0.0
-        Amount of dropout.
-
-    Yields
-    ------
-    Module
-        Neural network layer components.
-    """
-    
-    yield nn.Linear(input_dim, output_dim, bias=bias)
-
-    if batch_norm:
-        yield nn.BatchNorm1d(output_dim)
-
-    if activation is not None:
-        yield ACTIVATION[activation](**kwargs)
-
-    if dropout > 0.:
-        yield nn.Dropout(dropout)
-
-def mlp(layers, bias=True, final_bias=True, batch_norm=False, final_norm=False, activation='relu', final_act=None, dropout=0., final_drop=0.):
-    """Constructs a multilayer perceptron with optional batch normalizations,
-    activations, and dropouts.
-    
-    Parameters
-    ----------
-    layers : tuple | list
-        Layer dimensionalities.
-    bias : bool, default=True
-        Whether to include hidden bias terms.
-    final_bias : bool, default=True
-        Whether to include a final bias term.
-    activation : str, default='relu'
+    channels : int
+        Number of channels in each layer.
+    bias : bool, defaul=True
+        Whether to include additive bias in each hidden layer.
+    normalization : str, default=None
+        Hidden normalization function.
+    activation : str, default=None
         Hidden activation function.
-    final_act : str, default=None
-        Final activation function.
-    batch_norm : bool, default=False
-        Whether to include hidden batch normalization.
-    final_norm : bool, default=False
-        Whether to include final batch normalization.
     dropout : float, default=0.0
-        Amount of hidden dropout.
-    final_drop : float, default=0.0
-        Amount of final dropout.
-
-    Yields
-    ------
-    Module
-        Neural network layers.
-    """
-    
-    n_layers = len(layers)
-
-    for i in range(1, n_layers):
-        if i < n_layers - 1:
-            yield from layer(layers[i - 1], layers[i], bias, batch_norm, activation, dropout)
-        else:
-            yield from layer(layers[i - 1], layers[i], final_bias, final_norm, final_act, final_drop)
-
-class MLP(nn.Module):
-    """Implementation of a multilayer perceptron.
-    
-    Parameters
-    ----------
-    layers : tuple | list
-        Layer dimensionalities.
-    bias : bool, default=True
-        Whether to include hidden bias terms.
-    final_bias : bool, default=True
-        Whether to include a final bias term.
-    activation : str, default='relu'
-        Hidden activation function.
-    final_act : str, default=None
-        Final activation function.
-    batch_norm : bool, default=False
-        Whether to include hidden batch normalization.
-    final_norm : bool, default=False
-        Whether to include final batch normalization.
-    dropout : float, default=0.0
-        Amount of hidden dropout.
-    final_drop : float, default=0.0
-        Amount of final dropout.
+        Amount of dropout in each hidden layer.
+    out_bias : bool, default=True
+        Whether to include additive bias in the output layer.
+    out_normalization : str, default=None
+        Output normalization function.
+    out_activation : str, default=None
+        Output activation function.
+    out_dropout : float, default=0.0
+        Amount of dropout in the output layer.
 
     Attributes
     ----------
-    net : Sequential
-        Neural network model.
+    None
 
     Usage
     -----
-    >>> layers = (input_dim, hidden_dim, ..., output_dim)
-    >>> mlp = MLP(layers, *args, **kwargs)
-    >>> output = mlp(input)
+    >>> model = MLP(in_channels, hidden_channels, ..., out_channels, **kwargs)
+    >>> output = model(data)
     """
-    
-    def __init__(self, layers, bias=True, final_bias=True, batch_norm=False, final_norm=False, activation='relu', final_act=None, dropout=0., final_drop=0.):
-        super().__init__()
 
-        self.layers = layers
-        self.bias = bias
-        self.final_bias = final_bias
-        self.batch_norm = batch_norm
-        self.final_norm = final_norm
-        self.activation = activation
-        self.final_act = final_act
-        self.dropout = dropout
-        self.final_drop = final_drop
+    def __init__(self, *channels, bias=True, normalization=None, activation=None, dropout=0., out_bias=True, out_normalization=None, out_activation=None, out_dropout=0.):
+        modules = []
 
-        self.net = nn.Sequential(*list(mlp(layers, bias, final_bias, batch_norm, final_norm, activation, final_act, dropout, final_drop)))
+        for i in range(1, len(channels) - 1):
+            modules.append(self.layer(channels[i - 1], channels[i], bias, normalization, activation, dropout))
 
-    def forward(self, x):
-        """Performs a single forward pass through the network.
+        modules.append(self.layer(channels[-2%len(channels)], channels[-1], out_bias, out_normalization, out_activation, out_dropout))
+
+        super().__init__(*modules)
+
+    @staticmethod
+    def layer(in_channels, out_channels=None, bias=True, normalization=None, activation=None, dropout=0.):
+        """Constructs a single neural network layer with optional normalization,
+        activation, and dropout modules.
         
         Parameters
         ----------
-        x : Tensor
-            Network input.
-
+        in_channels : int
+            Number of input channels.
+        out_channels : int, default=None
+            Number of output channels.
+        bias : bool, default=True
+            Whether to include additive bias.
+        normalization : str, default=None
+            Normalization function.
+        activation : str, default=None
+            Activation function.
+        dropout : float, default=0.0
+            Amount of dropout
+        
         Returns
         -------
-        Tensor
-            Network output.
+        Sequential
+            Neural network layer module.
         """
-                
-        return self.net(x)
+
+        if out_channels is None:
+            out_channels = in_channels
+
+        module = nn.Sequential(nn.Linear(in_channels, out_channels, bias))
+
+        if normalization is not None:
+            module.append(NORMALIZATION[normalization](out_channels))
+
+        if activation is not None:
+            module.append(ACTIVATION[activation]())
+
+        if dropout > 0.:
+            module.append(nn.Dropout(dropout))
+
+        return module

@@ -4,7 +4,6 @@ Craig Fouts (craig.fouts@uu.igp.se)
 
 import numpy as np
 from scipy import stats
-from scipy.spatial.distance import cdist
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
 from tqdm import tqdm

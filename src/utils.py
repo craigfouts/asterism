@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from matplotlib import cm, colormaps, colors
 from scipy.optimize import linear_sum_assignment
 from sklearn.metrics import confusion_matrix
+from tqdm import tqdm
 
 def set_seed(seed=9):
     """Sets a fixed environment-wide random state.
@@ -106,6 +107,24 @@ def shuffle(data, labels=None, sort=False, cut=None):
         return data, labels
     
     return data
+
+def kmeans(data, k=10, n_steps=10, n_permutations=100, verbosity=0, description='KMeans'):
+    labels = torch.zeros(n_permutations, data.shape[0], 1, dtype=torch.int32)
+    
+    for i in range(n_permutations):
+        centroids = data[torch.randperm(data.shape[0])[:k]]
+
+        for _ in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
+            labels[i, :, 0] = relabel(torch.cdist(data, centroids).argmin(-1))
+            assignments = (labels[i] == torch.arange(k)).float()
+            mask = assignments.sum(0) > 0
+            assignments = assignments[:, mask]
+            means = assignments@torch.diag(1/assignments.sum(0))
+            centroids[mask] = means.T@data
+
+    labels = torch.mode(labels, 0).values
+    
+    return labels
 
 def format_ax(ax, title=None, aspect='equal', show_ax=True):
     """Formats the given Matplotlib axis in place by setting the title, aspect 

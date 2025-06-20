@@ -20,11 +20,11 @@ class Encoder(nn.Module):
     ----------
     in_channels : int
         Number of input channels.
-    wc_channels : int | tuple | list, default=256
+    wc_channels : int | tuple | list, default=(64, 64)
         Architecture of the within-cluster invariant representation encoder.
-    bc_channels : int | tuple | list, default=512
+    bc_channels : int | tuple | list, default=(128, 128)
         Architecture of the between-cluster invariant representation encoder.
-    lp_channels : int | tuple | list, default=1
+    lp_channels : int | tuple | list, default=(32, 32)
         Architecture of the topic log probability encoder.
     activation : str, default='prelu'
         Hidden activation function.
@@ -46,7 +46,7 @@ class Encoder(nn.Module):
     >>> topics = model(data)
     """
 
-    def __init__(self, in_channels, wc_channels=256, bc_channels=512, lp_channels=1, activation='prelu'):
+    def __init__(self, in_channels, wc_channels=(64, 64), bc_channels=(128, 128), lp_channels=(32, 32), activation='prelu'):
         super().__init__()
 
         self.in_channels = in_channels
@@ -61,33 +61,15 @@ class Encoder(nn.Module):
         self.lp_model = MLP(self.wc_channels[-1] + self.bc_channels[-1], *self.lp_channels, activation=activation, out_bias=False)
 
     def build(self, data):
-        """Initializes class attributes and invariant representations.
-        
-        Parameters
-        ----------
-        data : Tensor
-            Feature values for each sample in each batch.
-
-        Returns
-        -------
-        self
-            I return therefore I am.
-        """
-        
         self.batch_size = data.shape[0] if len(data.shape) > 2 else 1
-        (self.n_samples, n_features), self.n_topics = data.shape[-2:], 1
-        data = data.reshape(self.batch_size*self.n_samples, n_features)
-        self.wc = self.wc_model(data).view(self.batch_size, self.n_samples, self.wc_channels[-1])
-        self.us = self.us_model(data).view(self.batch_size, self.n_samples, self.wc_channels[-1])
+        self.n_samples, self.n_topics = data.shape[-2], 1
+        self.wc, self.us = self.wc_model(data), self.us_model(data)
         self.WC = torch.zeros((self.batch_size, 1, self.wc_channels[-1]))
         self.WC[:, 0], self.US = self.wc[:, 0], self.us[:, 2:].sum(1)
 
         return self
     
     def update(self, sample, topics):
-        """
-        """
-        
         n_topics = topics[:sample].unique().shape[0]
 
         if n_topics == self.n_topics:
@@ -102,25 +84,21 @@ class Encoder(nn.Module):
 
         return n_topics
     
-    def logprob(self, sample, topic):
-        if topic == self.n_topics:
-            WC = torch.cat((self.WC, self.wc[:, sample].unsqueeze(1)), 1)
-        else:
-            WC = self.WC.clone()
-            WC[:, topic] += self.wc[:, sample]
+    def logprobs(self, sample):
+        logprobs = torch.zeros(self.batch_size, self.n_topics + 1)
+        topic_range = torch.arange(self.n_topics)
+        US_k = self.US.repeat(self.n_topics, 1, 1)
+        WC_k = self.WC.repeat(self.n_topics, 1, 1, 1)
+        WC_k[topic_range, :, topic_range] += self.wc[:, sample]
+        WC_K = torch.cat((self.WC, self.wc[:, sample].unsqueeze(1)), 1)
+        BC_k, BC_K = self.bc_model(WC_k).sum(2), self.bc_model(WC_K).sum(1)
+        logprobs[:, :-1] = self.lp_model(torch.cat((US_k, BC_k), -1))[..., 0].T
+        logprobs[:, -1] = self.lp_model(torch.cat((self.US, BC_K), 1)).squeeze()
 
-        WC = WC.view((self.batch_size*WC.shape[1], self.wc_channels[-1]))
-        BC = self.bc_model(WC)
-        BC = BC.view(self.batch_size, BC.shape[0]//self.batch_size, self.bc_channels[-1]).sum(1)
-        logprob = self.lp_model(torch.cat((BC, self.US), 1)).squeeze()
-
-        return logprob
+        return logprobs
     
     def sample(self, sample, normalize=True, return_topics=True):
-        logprobs = torch.zeros(self.batch_size, self.n_topics + 1)
-
-        for k in range(self.n_topics + 1):
-            logprobs[:, k] = self.logprob(sample, k)
+        logprobs = self.logprobs(sample)
 
         if normalize:
             m, _ = logprobs.max(1, keepdim=True)
@@ -129,19 +107,19 @@ class Encoder(nn.Module):
         if return_topics:
             topics = torch.multinomial(logprobs.exp(), 1).T[0]
 
-            return topics, logprobs
+            return topics
         
         return logprobs
     
     def evaluate(self, data, labels):
         self.build(data)
-        loss = 0
+        nll = 0
 
         for i in range(2, self.n_samples):
             self.n_topics = self.update(i, labels)
-            loss -= self.sample(i, return_topics=False)[:, labels[i]].mean()
+            nll -= self.sample(i, return_topics=False)[:, labels[i]].mean()
 
-        return loss
+        return nll
     
     def forward(self, data):
         self.build(data)
@@ -149,7 +127,7 @@ class Encoder(nn.Module):
 
         for i in range(2, self.n_samples):
             self.n_topics = self.update(i, topics)
-            topics[i] = torch.mode(self.sample(i)[0])[0].item()
+            topics[i] = torch.mode(self.sample(i))[0].item()
 
         return topics
     
@@ -162,11 +140,11 @@ class NCP(nn.Module):
 
     Parameters
     ----------
-    wc_channels : int | tuple | list, default=256
+    wc_channels : int | tuple | list, default=(128, 128)
         Architecture of the within-cluster invariant encoder.
-    bc_channels : int | tuple | list, default=512
+    bc_channels : int | tuple | list, default=(512, 512)
         Architecture of the between-cluster invariant encoder.
-    lp_channels : int | tuple | list, default=1
+    lp_channels : int | tuple | list, default=(128, 128)
         Architecture of the topic log probability encoder.
     activation : str, default='prelu'
         Hidden activation function.
@@ -186,7 +164,7 @@ class NCP(nn.Module):
     >>> topics = model(data)
     """
 
-    def __init__(self, wc_channels=256, bc_channels=512, lp_channels=1, activation='prelu'):
+    def __init__(self, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), activation='prelu'):
         super().__init__()
 
         self.wc_channels = wc_channels
@@ -221,20 +199,23 @@ class NCP(nn.Module):
 
         return nll.item()
     
-    def fit(self, data_maker, n_steps=200, n_permutations=6, learning_rate=1e-4, weight_decay=1e-2, verbosity=1, description='NCP'):
-        self.build(data_maker.n_features, learning_rate, weight_decay)
+    def fit(self, data, labels, n_steps=200, n_permutations=6, learning_rate=1e-4, weight_decay=1e-2, batch_size=16, n_samples=64, verbosity=1, description='NCP'):
+        self.build(data.shape[-1], learning_rate, weight_decay)
+        self.batch_size = max(data.shape[0], batch_size)
 
         for _ in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
-            (data, labels), nll = data_maker.make(), 0
+            mask, nll = torch.randperm(data.shape[0])[:batch_size], 0
 
             for _ in range(n_permutations):
-                nll += self.evaluate(*shuffle(data, labels, sort=True), grad=True)
+                X, y = shuffle(data[mask], labels, sort=True, cut=n_samples)
+                nll += self.evaluate(X, y, grad=True)
 
-            self.step(nll/data.shape[1])
-
-        return self
+            self.step(nll)
     
     def forward(self, data):
-        topics = self.encoder(data)
+        if data.shape[0] == 1 or len(data.shape) == 2:
+            data = data.repeat(self.batch_size, 1, 1)
 
+        topics = self.encoder(data)
+        
         return topics

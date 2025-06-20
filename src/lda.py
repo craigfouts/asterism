@@ -3,6 +3,12 @@ Craig Fouts (craig.fouts@uu.igp.se)
 """
 
 import numpy as np
+import pyro
+import pyro.distributions.constraints as constraints
+import torch
+from pyro.distributions import Categorical, Dirichlet
+from pyro.infer import SVI, TraceEnum_ELBO
+from pyro.optim import Adam
 from scipy import stats
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
@@ -46,6 +52,98 @@ def shuffle(documents, words, n_topics=5, n_words=20, return_counts=False):
         return topics, topic_counts, document_counts
     
     return topics
+
+class PyroLDA(BaseEstimator, ClusterMixin, TransformerMixin):
+    """Adaptation of latent Dirichlet allocation for point cloud clustering
+    using Pyro for black-box stochastic variational inference. Based on methods
+    proposed by David Blei, Andrew Ng, and Michael Jordan.
+    
+    https://papers.nips.cc/paper/2070-latent-dirichlet-allocation
+
+    Parameters
+    ----------
+    n_topics : int, default=5
+        Number of discoverable topics.
+    n_words : int, default=50
+        Number of phenotypic words.
+    topic_prior : float, default=1.0
+        Topic distribution Dirichlet prior.
+    document_prior : float, default=1.0
+        Document distribution Dirichlet prior.
+    seed : int, default=None
+        Random state seed
+
+    Attributes
+    ----------
+    topic_posterior : Tensor
+        TODO
+    doc_posterior : Tensor
+        TODO
+    """
+
+    def __init__(self, n_topics=5, n_words=50, topic_prior=1., document_prior=1., seed=None):
+        super().__init__()
+        set_seed(seed)
+
+        self.n_topics = n_topics
+        self.n_words = n_words
+        self.topic_prior = topic_prior
+        self.document_prior = document_prior
+
+        self.corpus = None
+        self.topic_posterior = None
+        self.doc_posterior = None
+        self.batch_size = None
+        self.optimizer = None
+        self.elbo = None
+        self.svi = None
+        self.loss_log = []
+
+    def build(self, data, learning_rate=1e-2):
+        
+
+        self.optimizer = Adam({'lr': learning_rate})
+        self.elbo = TraceEnum_ELBO(max_plate_nesting=2)
+        self.svi = SVI(self.model, self.guide, self.optimizer, self.elbo)
+
+        return self
+    
+    def model(self, data):
+        with pyro.plate('topics', self.n_topics):
+            topic_words = pyro.sample('topic_words', Dirichlet(self.topic_prior))
+
+        with pyro.plate('documents', data.shape[0], self.batch_size) as mask:
+            data = data[mask]
+            document_topics = pyro.sample('document_topics', Dirichlet(self.doc_prior))
+
+            with pyro.plate('words', data.shape[1]):
+                word_topics = pyro.sample('word_topics', Categorical(document_topics), infer={'enumerate': 'parallel'})
+                pyro.sample('document_words', Categorical(topic_words[word_topics]), obs=data)
+
+        return self
+
+    def guide(self, data):
+        self.topic_posterior = pyro.param('topic_posterior', lambda: torch.ones(self.n_topics, self.n_words), constraint=constraints.greater_than(.5))
+        self.document_posterior = pyro.param('document_posterior', lambda: torch.ones(data.shape[0], self.n_topics), constraint=constraints.greater_than(.5))
+
+        with pyro.plate('topics', self.n_topics):
+            pyro.sample('topic_words', Dirichlet(self.topic_posterior))
+
+        with pyro.plate('documents', data.shape[0], self.batch_size) as mask:
+            data = data[mask]
+            pyro.sample('document_topics', Dirichlet(self.document_posterior))
+
+        return self
+
+    def fit(self, data, n_steps=1000, learning_rate=1e-2, batch_size=100, verbosity=1, description='LDA'):
+        self.build(data, learning_rate)
+        self.batch_size = batch_size
+        
+        for _ in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
+            loss = self.svi.step(self.corpus)
+            self.loss_log.append(loss)
+
+        return self
 
 class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     """Adaptation of latent Dirichlet allocation for point cloud clustering

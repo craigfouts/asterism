@@ -13,7 +13,7 @@ from scipy import stats
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
 from tqdm import tqdm
-from utils import set_seed
+from utils import kmeans, relabel, set_seed
 
 def shuffle(documents, words, n_topics=5, n_words=20, return_counts=False):
     """Randomly assigns a topic to each sample.
@@ -59,36 +59,18 @@ class PyroLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     proposed by David Blei, Andrew Ng, and Michael Jordan.
     
     https://papers.nips.cc/paper/2070-latent-dirichlet-allocation
-
-    Parameters
-    ----------
-    n_topics : int, default=5
-        Number of discoverable topics.
-    n_words : int, default=50
-        Number of phenotypic words.
-    topic_prior : float, default=1.0
-        Topic distribution Dirichlet prior.
-    document_prior : float, default=1.0
-        Document distribution Dirichlet prior.
-    seed : int, default=None
-        Random state seed
-
-    Attributes
-    ----------
-    topic_posterior : Tensor
-        TODO
-    doc_posterior : Tensor
-        TODO
     """
 
-    def __init__(self, n_topics=5, n_words=50, topic_prior=1., document_prior=1., seed=None):
+    def __init__(self, n_topics=5, vocab_size=10, document_size=10, document_prior=None, topic_prior=None, seed=None):
+        pyro.clear_param_store()
         super().__init__()
         set_seed(seed)
 
         self.n_topics = n_topics
-        self.n_words = n_words
-        self.topic_prior = topic_prior
-        self.document_prior = document_prior
+        self.vocab_size = vocab_size
+        self.document_size = document_size
+        self.document_prior = torch.ones(n_topics)/n_topics if document_prior is None else document_prior
+        self.topic_prior = torch.ones(vocab_size)/vocab_size if topic_prior is None else topic_prior
 
         self.corpus = None
         self.topic_posterior = None
@@ -97,11 +79,12 @@ class PyroLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         self.optimizer = None
         self.elbo = None
         self.svi = None
+        self.labels_ = None
         self.loss_log = []
 
-    def build(self, data, learning_rate=1e-2):
-        
-
+    def build(self, data, learning_rate=1e-1):
+        knn = torch.cdist(data, data).topk(self.document_size, largest=False).indices
+        self.corpus = kmeans(data[:, 3:], self.vocab_size)[knn].T
         self.optimizer = Adam({'lr': learning_rate})
         self.elbo = TraceEnum_ELBO(max_plate_nesting=2)
         self.svi = SVI(self.model, self.guide, self.optimizer, self.elbo)
@@ -112,30 +95,30 @@ class PyroLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         with pyro.plate('topics', self.n_topics):
             topic_words = pyro.sample('topic_words', Dirichlet(self.topic_prior))
 
-        with pyro.plate('documents', data.shape[0], self.batch_size) as mask:
-            data = data[mask]
-            document_topics = pyro.sample('document_topics', Dirichlet(self.doc_prior))
+        with pyro.plate('documents', data.shape[1], self.batch_size) as mask:
+            data = data[:, mask]
+            document_topics = pyro.sample('document_topics', Dirichlet(self.document_prior))
 
-            with pyro.plate('words', data.shape[1]):
+            with pyro.plate('words', data.shape[0]):
                 word_topics = pyro.sample('word_topics', Categorical(document_topics), infer={'enumerate': 'parallel'})
                 pyro.sample('document_words', Categorical(topic_words[word_topics]), obs=data)
 
         return self
 
     def guide(self, data):
-        self.topic_posterior = pyro.param('topic_posterior', lambda: torch.ones(self.n_topics, self.n_words), constraint=constraints.greater_than(.5))
-        self.document_posterior = pyro.param('document_posterior', lambda: torch.ones(data.shape[0], self.n_topics), constraint=constraints.greater_than(.5))
+        self.topic_posterior = pyro.param('topic_posterior', lambda: torch.ones(self.n_topics, self.vocab_size), constraint=constraints.greater_than(.5))
+        self.document_posterior = pyro.param('document_posterior', lambda: torch.ones(data.shape[1], self.n_topics), constraint=constraints.greater_than(.5))
 
         with pyro.plate('topics', self.n_topics):
             pyro.sample('topic_words', Dirichlet(self.topic_posterior))
 
-        with pyro.plate('documents', data.shape[0], self.batch_size) as mask:
-            data = data[mask]
-            pyro.sample('document_topics', Dirichlet(self.document_posterior))
+        with pyro.plate('documents', data.shape[1], self.batch_size) as mask:
+            data = data[:, mask]
+            pyro.sample('document_topics', Dirichlet(self.document_posterior[mask]))
 
         return self
 
-    def fit(self, data, n_steps=1000, learning_rate=1e-2, batch_size=100, verbosity=1, description='LDA'):
+    def fit(self, data, n_steps=1000, learning_rate=1e-1, batch_size=100, verbosity=1, description='LDA'):
         self.build(data, learning_rate)
         self.batch_size = batch_size
         
@@ -143,7 +126,14 @@ class PyroLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             loss = self.svi.step(self.corpus)
             self.loss_log.append(loss)
 
+        self.labels_ = relabel(pyro.sample('document_topics', Dirichlet(self.document_posterior)).argmax(-1))
+
         return self
+    
+    def transform(self, _=None):
+        probabilities = pyro.sample('document_topics', Dirichlet(self.document_posterior))
+
+        return probabilities
 
 class GibbsLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     """Adaptation of latent Dirichlet allocation for point cloud clustering

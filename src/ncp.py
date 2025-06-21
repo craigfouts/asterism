@@ -211,6 +211,8 @@ class NCP(nn.Module):
                 nll += self.evaluate(X, y, grad=True)
 
             self.step(nll)
+
+        return self
     
     def forward(self, data):
         if data.shape[0] == 1 or len(data.shape) == 2:

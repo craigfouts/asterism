@@ -122,7 +122,7 @@ def kmeans(data, k=10, n_steps=10, n_permutations=100, verbosity=0, description=
             means = assignments@torch.diag(1/assignments.sum(0))
             centroids[mask] = means.T@data
 
-    labels = torch.mode(labels, 0).values
+    labels = torch.mode(labels[..., 0], 0).values
     
     return labels
 
@@ -173,7 +173,7 @@ def make_figure(n_sections=1, figsize=5, colormap=None, labels=None):
 
     return fig, axes
 
-def show_dataset(data, labels, sectioned=False, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
+def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
     """Displays scatter plot(s) of sample points colored by label and separated
     by section.
 

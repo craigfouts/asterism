@@ -8,7 +8,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
 from tqdm import tqdm
-from utils import set_seed
+from utils import relabel, set_seed
 
 def distribute(data, n_documents=None, scale=1., n_neighbors=4):
     """Uniformly distributes document locations proximally to sample locations
@@ -461,7 +461,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             likelihood = self.step(i)
             self.likelihood_log.append(likelihood)
 
-        self.labels_, _ = stats.mode(self.topics[burn_in:], 0)
+        self.labels_ = stats.mode(self.topics[burn_in:], 0).mode  # TODO: relabel
 
         return self
     

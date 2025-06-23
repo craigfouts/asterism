@@ -461,7 +461,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             likelihood = self.step(i)
             self.likelihood_log.append(likelihood)
 
-        self.labels_ = stats.mode(self.topics[burn_in:], 0).mode  # TODO: relabel
+        self.labels_ = relabel(stats.mode(self.topics[burn_in:], 0).mode)
 
         return self
     

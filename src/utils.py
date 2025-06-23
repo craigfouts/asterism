@@ -11,6 +11,8 @@ import torch
 import torch.nn.functional as F
 from matplotlib import cm, colormaps, colors
 from scipy.optimize import linear_sum_assignment
+from scipy.spatial.distance import cdist
+from scipy.stats import mode
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
@@ -86,14 +88,33 @@ def map_labels(targets, predictions):
     
     return labels
 
-def relabel(labels):
-    if type(labels) == torch.Tensor:
-        topics, inverse = labels.unique(return_inverse=True)
+def one_hot(data):
+    if type(data) == torch.Tensor:
+        encoding = F.one_hot(data)
     else:
-        topics, inverse = np.unique(labels, return_inverse=True)
+        encoding = np.eye(data.shape[0])[data, :data.max() + 1]
 
+    return encoding
+
+def _relabel_array(labels):
+    topics, inverse = np.unique(labels, return_inverse=True)
+    _, mapping = linear_sum_assignment(one_hot(inverse), maximize=True)
+    labels = (labels[None, :] == topics[mapping][:, None]).argmax(0)
+
+    return labels
+
+def _relabel_tensor(labels):
+    topics, inverse = labels.unique(return_inverse=True)
     _, mapping = linear_sum_assignment(F.one_hot(inverse), maximize=True)
     labels = (labels[None, :] == topics[mapping][:, None]).int().argmax(0)
+
+    return labels
+
+def relabel(labels):
+    if type(labels) == torch.Tensor:
+        labels = _relabel_tensor(labels)
+    else:
+        labels = _relabel_array(labels)
 
     return labels
 
@@ -108,22 +129,50 @@ def shuffle(data, labels=None, sort=False, cut=None):
     
     return data
 
-def kmeans(data, k=10, n_steps=10, n_permutations=100, verbosity=0, description='KMeans'):
-    labels = torch.zeros(n_permutations, data.shape[0], 1, dtype=torch.int32)
-    
-    for i in range(n_permutations):
-        centroids = data[torch.randperm(data.shape[0])[:k]]
+def _kmeans_array(data, k=5, n_steps=10, n_permutations=100, verbosity=1, description='KMeans'):
+    labels = np.zeros((n_permutations, data.shape[0], 1), dtype=np.int32)
+    k_range = np.arange(k)
 
-        for _ in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
-            labels[i, :, 0] = relabel(torch.cdist(data, centroids).argmin(-1))
-            assignments = (labels[i] == torch.arange(k)).float()
+    for i in tqdm(range(n_permutations), description) if verbosity == 1 else range(n_permutations):
+        centroids = data[np.random.permutation(data.shape[0])[:k]]
+
+        for _ in range(n_steps):
+            labels[i, :, 0] = relabel(cdist(data, centroids).argmin(-1))
+            assignments = (labels[i] == k_range).astype(data.dtype)
             mask = assignments.sum(0) > 0
             assignments = assignments[:, mask]
-            means = assignments@torch.diag(1/assignments.sum(0))
-            centroids[mask] = means.T@data
+            weights = assignments@np.diag(1/assignments.sum(0))
+            centroids[mask] = weights.T@data
 
-    labels = torch.mode(labels[..., 0], 0).values
+    labels = mode(labels.squeeze()).mode
+
+    return labels
+
+def _kmeans_tensor(data, k=5, n_steps=10, n_permutations=100, verbosity=1, description='KMeans'):
+    labels = torch.zeros(n_permutations, data.shape[0], 1, dtype=torch.int32)
+    k_range = torch.arange(k)
     
+    for i in tqdm(range(n_permutations), description) if verbosity == 1 else range(n_permutations):
+        centroids = data[torch.randperm(data.shape[0])[:k]]
+
+        for _ in range(n_steps):
+            labels[i, :, 0] = relabel(torch.cdist(data, centroids).argmin(-1))
+            assignments = (labels[i] == k_range).to(data.dtype)
+            mask = assignments.sum(0) > 0
+            assignments = assignments[:, mask]
+            weights = assignments@torch.diag(1/assignments.sum(0))
+            centroids[mask] = weights.T@data
+
+    labels = torch.mode(labels.squeeze(), 0).values
+    
+    return labels
+
+def kmeans(data, k=5, n_steps=10, n_permutations=100, verbosity=1, description='KMeans'):
+    if type(data) == torch.Tensor:
+        labels = _kmeans_tensor(data, k, n_steps, n_permutations, verbosity, description)
+    else:
+        labels = _kmeans_array(data, k, n_steps, n_permutations, verbosity, description)
+
     return labels
 
 def format_ax(ax, title=None, aspect='equal', show_ax=True):

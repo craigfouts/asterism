@@ -84,7 +84,7 @@ class PyroLDA(BaseEstimator, ClusterMixin, TransformerMixin):
 
     def build(self, data, learning_rate=1e-1):
         knn = torch.cdist(data, data).topk(self.document_size, largest=False).indices
-        self.corpus = kmeans(data[:, 3:], self.vocab_size)[knn].T
+        self.corpus = kmeans(data[:, 3:], self.vocab_size, verbosity=0)[knn].T
         self.optimizer = Adam({'lr': learning_rate})
         self.elbo = TraceEnum_ELBO(max_plate_nesting=2)
         self.svi = SVI(self.model, self.guide, self.optimizer, self.elbo)

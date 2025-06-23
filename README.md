@@ -6,14 +6,14 @@ Implementations of semantic segmentation algorithms and spatial topic models app
 ![image](https://github.com/user-attachments/assets/a2d45a0b-6b8c-4a2b-a8ec-d651a9c35b66) 
 
 ### Predicted Topics
-![image](https://github.com/user-attachments/assets/5aff8403-729b-49ed-a9cf-6626ec25ee03)
+![image](https://github.com/user-attachments/assets/572e0f33-29d5-4b8f-80a0-b8a1e29982b3)
 
 ## Spatial Latent Dirichlet Allocation
 ### Cell Types
-![image](https://github.com/user-attachments/assets/c2fde920-c958-45cb-bd3e-880858e72010)
+![image](https://github.com/user-attachments/assets/77617b3c-ffe6-4b4d-af29-af976d2e2f20)
 
 ### Predicted Topics
-![image](https://github.com/user-attachments/assets/7a91bfeb-f11a-479c-b210-f2520af3373b)
+![image](https://github.com/user-attachments/assets/6b662705-8262-4ccc-b332-a37bb92aadad)
 
 ## Neural Clustering Process
 ### Test (1) + Train (4) Datasets

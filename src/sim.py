@@ -5,7 +5,7 @@ Craig Fouts (craig.fouts@uu.igp.se)
 import numpy as np
 from sklearn.datasets import make_classification
 import torch
-from utils import itemize
+from utils import to_list
 
 CHECKERS = np.array([[0, 1, 0],
                      [1, 0, 1],
@@ -39,8 +39,8 @@ def make_blocks(template='polygons', block_size=5):
     """
 
     n_sections = len(template) if isinstance(template, (tuple, list)) else 1
-    template, block_size = itemize(n_sections, template, block_size)
-    template = [TEMPLATES[block] if isinstance(block, str) else block for block in template]
+    template, block_size = to_list(n_sections, template, block_size)
+    template = [TEMPLATES[t] if isinstance(t, str) else t for t in template]
     locs, labels = [], []
 
     for i, (t, s) in enumerate(zip(template, block_size)):

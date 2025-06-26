@@ -4,11 +4,8 @@ Craig Fouts (craig.fouts@uu.igp.se)
 
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-import pyro
-import random
 import torch
-import torch.nn.functional as F
+from functools import singledispatch
 from matplotlib import cm, colormaps, colors
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
@@ -16,105 +13,65 @@ from scipy.stats import mode
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
-def set_seed(seed=9):
-    """Sets a fixed environment-wide random state.
-    
-    Parameters
-    ----------
-    seed : int, default=9
-        Random state seed.
+def to_list(length, *items):
+    """Converts each item into a list of specified length, truncating if the 
+    item is a tuple or list of longer length and repeating the last value if the 
+    item is a tuple or list of shorter length.
 
-    Returns
-    -------
-    None
-    """
-
-    if seed is not None:
-        os.environ['PYTHONHASHSEED'] = str(seed)
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = True
-        pyro.set_rng_seed(seed)
-
-def itemize(length, *items):
-    """Converts each item to a collection of the specified length, truncating if 
-    the item is a tuple or list of longer length and repeating the last value if 
-    the item is a tuple or list of shorter length.
-    
     Parameters
     ----------
     length : int
-        Length of item list.
+        Length of item list(s).
     items : any
-        Items to convert to lists.
-
-    Yields
-    ------
-    tuple | list
-        Collection of items.
-    """
-
-    for item in items:
-        if isinstance(item, (tuple, list)):
-            yield item[:length] + item[-1:]*(length - len(item))
-        else:
-            yield [item,]*length
-
-def map_labels(targets, predictions):
-    """Maps predicted cluster labels to the given target labels using linear sum
-    assignment.
-    
-    Parameters
-    ----------
-    targets : ndarray
-        Target cluster labels.
-    predictions : ndarray
-        Predicted cluster labels.
+        Item(s) to convert into list(s).
 
     Returns
     -------
-    ndarray
-        Optimal permutation of predicted cluster labels.
+    list
+        list(s).
     """
-
-    scores = confusion_matrix(predictions, targets)
-    row, col = linear_sum_assignment(scores, maximize=True)
-    labels = np.zeros_like(predictions)
-
-    for i in row:
-        labels[predictions == i] = col[i]
     
-    return labels
+    lists = []
 
-def one_hot(data):
-    if type(data) == torch.Tensor:
-        encoding = F.one_hot(data)
+    for item in items:
+        if isinstance(item, (tuple, list)):
+            lists.append(item[:length] + item[-1:]*(length - len(item)))
+        else:
+            lists.append([item]*(length + 1))
+
+    lists = np.squeeze(lists)[..., :-1].tolist()
+
+    return lists
+
+@singledispatch
+def relabel(labels, target=None):
+    unique, inverse = np.unique_inverse(labels)
+
+    if target is None:
+        scores = np.eye(inverse.shape[0])[inverse, :inverse.max() + 1]
     else:
-        encoding = np.eye(data.shape[0])[data, :data.max() + 1]
+        labels, target = relabel(labels), np.unique_inverse(target)[-1]
+        unique, inverse = np.unique_inverse(labels)
+        scores = confusion_matrix(target[:labels.shape[0]], labels)
 
-    return encoding
-
-def _relabel_array(labels):
-    topics, inverse = np.unique(labels, return_inverse=True)
-    _, mapping = linear_sum_assignment(one_hot(inverse), maximize=True)
-    labels = (labels[None, :] == topics[mapping][:, None]).argmax(0)
+    _, mask = linear_sum_assignment(scores, maximize=True)
+    labels = (labels[None] == unique[mask[mask < len(unique)], None]).argmax(0)
 
     return labels
 
-def _relabel_tensor(labels):
-    topics, inverse = labels.unique(return_inverse=True)
-    _, mapping = linear_sum_assignment(F.one_hot(inverse), maximize=True)
-    labels = (labels[None, :] == topics[mapping][:, None]).int().argmax(0)
+@relabel.register(torch.Tensor)
+def _(labels, target=None):
+    unique, inverse = labels.unique(return_inverse=True)
 
-    return labels
-
-def relabel(labels):
-    if type(labels) == torch.Tensor:
-        labels = _relabel_tensor(labels)
+    if target is None:
+        scores = torch.eye(inverse.shape[0])[inverse, :inverse.max() + 1]
     else:
-        labels = _relabel_array(labels)
+        labels, target = relabel(labels), target.unique(return_inverse=True)[-1]
+        unique, inverse = labels.unique(return_inverse=True)
+        scores = confusion_matrix(target[:labels.shape[0]], labels)
+
+    _, mask = linear_sum_assignment(scores, maximize=True)
+    labels = (labels[None] == unique[mask[mask < len(unique)], None]).float().argmax(0)
 
     return labels
 
@@ -126,52 +83,43 @@ def shuffle(data, labels=None, sort=False, cut=None):
         labels = relabel(labels[mask]) if sort else labels[mask]
 
         return data, labels
-    
     return data
 
-def _kmeans_array(data, k=5, n_steps=10, n_permutations=100, verbosity=1, description='KMeans'):
-    labels = np.zeros((n_permutations, data.shape[0], 1), dtype=np.int32)
-    k_range = np.arange(k)
+@singledispatch
+def kmeans(data, k=3, n_steps=10, n_perms=100, verbosity=1, desc='KMeans'):
+    labels, k_range = np.zeros((n_perms, data.shape[0]), dtype=np.int32), np.arange(k)
 
-    for i in tqdm(range(n_permutations), description) if verbosity == 1 else range(n_permutations):
+    for i in tqdm(range(n_perms), desc) if verbosity == 1 else range(n_perms):
         centroids = data[np.random.permutation(data.shape[0])[:k]]
 
         for _ in range(n_steps):
-            labels[i, :, 0] = relabel(cdist(data, centroids).argmin(-1))
-            assignments = (labels[i] == k_range).astype(data.dtype)
+            labels[i] = relabel(cdist(data, centroids).argmin(-1))
+            assignments = (labels[i][:, None] == k_range).astype(data.dtype)
             mask = assignments.sum(0) > 0
             assignments = assignments[:, mask]
             weights = assignments@np.diag(1/assignments.sum(0))
-            centroids[mask] = weights.T@data
+            centroids[mask[:centroids.shape[0]]] = weights.T@data
 
-    labels = mode(labels.squeeze()).mode
+    labels = mode(labels).mode
 
     return labels
 
-def _kmeans_tensor(data, k=5, n_steps=10, n_permutations=100, verbosity=1, description='KMeans'):
-    labels = torch.zeros(n_permutations, data.shape[0], 1, dtype=torch.int32)
-    k_range = torch.arange(k)
-    
-    for i in tqdm(range(n_permutations), description) if verbosity == 1 else range(n_permutations):
+@kmeans.register(torch.Tensor)
+def _(data, k=3, n_steps=10, n_perms=100, verbosity=1, desc='KMeans'):
+    labels, k_range = torch.zeros(n_perms, data.shape[0], dtype=torch.int32), torch.arange(k)
+
+    for i in tqdm(range(n_perms), desc) if verbosity == 1 else range(n_perms):
         centroids = data[torch.randperm(data.shape[0])[:k]]
 
         for _ in range(n_steps):
-            labels[i, :, 0] = relabel(torch.cdist(data, centroids).argmin(-1))
-            assignments = (labels[i] == k_range).to(data.dtype)
+            labels[i] = relabel(torch.cdist(data, centroids).argmin(-1))
+            assignments = (labels[i][:, None] == k_range).to(data.dtype)
             mask = assignments.sum(0) > 0
             assignments = assignments[:, mask]
             weights = assignments@torch.diag(1/assignments.sum(0))
-            centroids[mask] = weights.T@data
+            centroids[mask[:centroids.shape[0]]] = weights.T@data
 
-    labels = torch.mode(labels.squeeze(), 0).values
-    
-    return labels
-
-def kmeans(data, k=5, n_steps=10, n_permutations=100, verbosity=1, description='KMeans'):
-    if type(data) == torch.Tensor:
-        labels = _kmeans_tensor(data, k, n_steps, n_permutations, verbosity, description)
-    else:
-        labels = _kmeans_array(data, k, n_steps, n_permutations, verbosity, description)
+    labels = torch.mode(labels, 0).values
 
     return labels
 
@@ -217,9 +165,7 @@ def make_figure(n_sections=1, figsize=5, colormap=None, labels=None):
             norm = colors.Normalize(labels.min(), labels.max())
 
             return fig, axes, cmap, norm
-        
         return fig, axes, cmap
-
     return fig, axes
 
 def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
@@ -259,8 +205,8 @@ def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, c
 
     sections = np.unique(data[:, 0])
     n_sections = sections.shape[0]
-    title, size = itemize(n_sections, title, size)
-    figsize, = itemize(2, figsize*n_sections)
+    title, size = to_list(n_sections, title, size)
+    figsize = to_list(2, figsize*n_sections)
     fig, axes, cmap, norm = make_figure(n_sections, figsize, colormap, labels)
 
     for i, a, t, s in zip(sections, axes, title, size):

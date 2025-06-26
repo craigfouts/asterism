@@ -8,7 +8,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
 from tqdm import tqdm
-from utils import relabel, set_seed
+from utils import relabel
 
 def distribute(data, n_documents=None, scale=1., n_neighbors=4):
     """Uniformly distributes document locations proximally to sample locations
@@ -205,9 +205,8 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     >>> corpus = model.fit_transform(data, **kwargs)
     """
 
-    def __init__(self, n_topics=5, n_documents=None, n_words=40, document_scale=1., word_scale=1., topic_prior=1., document_prior=1., seed=None):
+    def __init__(self, n_topics=5, n_documents=None, n_words=40, document_scale=1., word_scale=1., topic_prior=1., document_prior=1.):
         super().__init__()
-        set_seed(seed)
 
         self.n_topics = n_topics
         self.n_documents = n_documents
@@ -216,7 +215,6 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         self.word_scale = word_scale
         self.topic_prior = topic_prior
         self.document_prior = document_prior
-        self.seed = seed
 
         self.corpus = None
         self.topics = None

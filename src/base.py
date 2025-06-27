@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from functools import singledispatch, wraps
 from inspect import getcallargs, signature
 from sklearn.base import BaseEstimator, ClusterMixin
@@ -59,7 +59,7 @@ def buildmethod(method):
         return method(self, *args, **kwargs)
     return wrap
 
-class HotTopic(ABC, ClusterMixin, BaseEstimator):
+class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     def __init__(self, desc=None, *, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, random_state=None):
         super().__init__()
 
@@ -72,6 +72,7 @@ class HotTopic(ABC, ClusterMixin, BaseEstimator):
         self.random_state = random_state
 
         self._step_n = 0
+
 
     @abstractmethod
     def _step(self):

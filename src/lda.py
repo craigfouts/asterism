@@ -17,8 +17,8 @@ from base import HotTopic
 from utils import kmeans, relabel
 
 class GibbsLDA(HotTopic):
-    def __init__(self, n_topics=3, *, vocab_size=10, doc_size=10, dt_prior=1., tw_prior=1., burn_in=50, desc=None):
-        super().__init__(desc)
+    def __init__(self, n_topics=3, *, vocab_size=10, doc_size=10, dt_prior=1., tw_prior=1., burn_in=50, desc=None, random_state=None):
+        super().__init__(desc, random_state=random_state)
 
         self.n_topics = n_topics
         self.vocab_size = vocab_size
@@ -32,7 +32,7 @@ class GibbsLDA(HotTopic):
         knn = cdist(X, X).argsort(-1)[:, :self.doc_size]
         self._docs = kmeans(X, self.vocab_size, verbosity=0)[knn]
         self._words = self._docs.flatten()
-        topics = np.random.choice(self.n_topics, self._words.shape[0])
+        topics = self.random_state_.choice(self.n_topics, self._words.shape[0])
         self._topics = np.zeros((n_steps, self._words.shape[0]), dtype=np.int32)
         self._topics[-1:] = topics
         self._dt_counts = np.eye(self.n_topics)[topics.reshape(*self._docs.shape)].sum(1)
@@ -66,14 +66,14 @@ class GibbsLDA(HotTopic):
         tw_ratio /= (self._tw_counts + self.tw_prior).sum(-1)
         probs = dt_ratio*tw_ratio
         probs /= probs.sum()
-        topic = np.random.choice(self.n_topics, p=probs)
+        topic = self.random_state_.choice(self.n_topics, p=probs)
 
         if return_probs:
             return topic, probs
         return topic
     
     def _step(self):
-        indices = np.random.permutation(self._words.shape[0])
+        indices = self.random_state_.permutation(self._words.shape[0])
         likelihood = 0
 
         for index in indices:

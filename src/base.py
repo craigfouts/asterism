@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from functools import singledispatch, wraps
 from inspect import getcallargs, signature
 from sklearn.base import BaseEstimator, ClusterMixin
-from sklearn.utils import check_array
+from sklearn.utils import check_array, check_random_state
 from tqdm import tqdm
 
 @singledispatch
@@ -41,6 +41,9 @@ def checkmethod(method, ensure_min_features=1, accept_complex=False, accept_spar
             self.accept_large_sparse if hasattr(self, 'accept_large_sparse') else accept_large_sparse, 
             self.ensure_all_finite if hasattr(self, 'ensure_all_finite') else ensure_all_finite)
 
+        if hasattr(self, 'random_state'):
+            self.random_state_ = check_random_state(self.random_state)
+
         return method(self, data, *args, **kwargs)
     return wrap
 
@@ -57,7 +60,7 @@ def buildmethod(method):
     return wrap
 
 class HotTopic(ABC, ClusterMixin, BaseEstimator):
-    def __init__(self, desc=None, *, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
+    def __init__(self, desc=None, *, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, random_state=None):
         super().__init__()
 
         self.desc = desc
@@ -66,6 +69,7 @@ class HotTopic(ABC, ClusterMixin, BaseEstimator):
         self.accept_sparse = accept_sparse
         self.accept_large_sparse = accept_large_sparse
         self.ensure_all_finite = ensure_all_finite
+        self.random_state = random_state
 
         self._step_n = 0
 

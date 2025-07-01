@@ -8,43 +8,44 @@ from sklearn.utils import check_array, check_random_state
 from tqdm import tqdm
 
 @singledispatch
-def check(data, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
-    if isinstance(data, (tuple, list)):
-        data = np.array(data)
+def check(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
+    if isinstance(X, (tuple, list)):
+        X = np.array(X)
 
-    data = check_array(data, accept_sparse=accept_sparse, accept_large_sparse=accept_large_sparse, ensure_all_finite=ensure_all_finite, ensure_min_features=ensure_min_features)
+    X = check_array(X, accept_sparse=accept_sparse, accept_large_sparse=accept_large_sparse, ensure_all_finite=ensure_all_finite, ensure_min_features=ensure_min_features)
 
-    if np.iscomplex(data.any()) and not accept_complex:
+    if np.iscomplex(X.any()) and not accept_complex:
         raise ValueError('Complex data not supported.')
 
-    return data
+    return X
 
 @check.register(torch.Tensor)
-def _(data, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
-    if isinstance(data, (tuple, list)):
-        data = torch.Tensor(data)
+def _(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
+    if isinstance(X, (tuple, list)):
+        X = torch.Tensor(X)
     
-    data = torch.tensor(check_array(data, accept_sparse=accept_sparse, accept_large_sparse=accept_large_sparse, ensure_all_finite=ensure_all_finite, ensure_min_features=ensure_min_features))
+    X = torch.tensor(check_array(X, accept_sparse=accept_sparse, accept_large_sparse=accept_large_sparse, ensure_all_finite=ensure_all_finite, ensure_min_features=ensure_min_features))
 
-    if torch.is_complex(data) and not accept_complex:
+    if torch.is_complex(X) and not accept_complex:
         raise ValueError('Complex data not supported.')
 
-    return data
+    return X
 
 def checkmethod(method, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
     @wraps(method)
-    def wrap(self, data, *args, **kwargs):
-        data = check(data, 
-            self.ensure_min_features if hasattr(self, 'ensure_min_features') else ensure_min_features, 
-            self.accept_complex if hasattr(self, 'accept_complex') else accept_complex,
-            self.accept_sparse if hasattr(self, 'accept_sparse') else accept_sparse, 
-            self.accept_large_sparse if hasattr(self, 'accept_large_sparse') else accept_large_sparse, 
-            self.ensure_all_finite if hasattr(self, 'ensure_all_finite') else ensure_all_finite)
-
+    def wrap(self, X, *args, **kwargs):
         if hasattr(self, 'random_state'):
             self.random_state_ = check_random_state(self.random_state)
 
-        return method(self, data, *args, **kwargs)
+        if hasattr(self, 'check') and self.check:
+            X = check(X, 
+                self.ensure_min_features if hasattr(self, 'ensure_min_features') else ensure_min_features, 
+                self.accept_complex if hasattr(self, 'accept_complex') else accept_complex,
+                self.accept_sparse if hasattr(self, 'accept_sparse') else accept_sparse, 
+                self.accept_large_sparse if hasattr(self, 'accept_large_sparse') else accept_large_sparse, 
+                self.ensure_all_finite if hasattr(self, 'ensure_all_finite') else ensure_all_finite)
+            
+        return method(self, X, *args, **kwargs)
     return wrap
 
 def buildmethod(method):
@@ -60,19 +61,19 @@ def buildmethod(method):
     return wrap
 
 class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
-    def __init__(self, desc=None, *, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, random_state=None):
+    def __init__(self, desc=None, random_state=None, *, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, check=True):
         super().__init__()
 
         self.desc = desc
+        self.random_state = random_state
         self.ensure_min_features = ensure_min_features
         self.accept_complex = accept_complex
         self.accept_sparse = accept_sparse
         self.accept_large_sparse = accept_large_sparse
         self.ensure_all_finite = ensure_all_finite
-        self.random_state = random_state
+        self.check = check
 
         self._step_n = 0
-
 
     @abstractmethod
     def _step(self):
@@ -84,18 +85,23 @@ class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
     def _display(self):
         desc = self.desc + '  ' if self.desc is not None else ''
-        print(f'{desc}step: {self._step_n}  score: {self.log_[-1]}')
+        msg = f'{desc}step: {self._step_n}'
+
+        if hasattr(self, 'log_'):
+            msg += f'  score: {self.log_[-1]}'
+
+        print(msg)
 
     @checkmethod
     @buildmethod
-    def fit(self, X, y=None, n_steps=100, verbosity=1, desc=None, rate=10, **kwargs):
+    def fit(self, X, y=None, n_steps=100, verbosity=1, rate=10, **kwargs):
         fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
-        step_kwargs = {key:fit_kwargs[key] for key in signature(self._step).parameters.keys()}
-        display_kwargs = {key:fit_kwargs[key] for key in signature(self._display).parameters.keys()}
-        predict_kwargs = {key:fit_kwargs[key] for key in signature(self._predict).parameters.keys()}
+        step_kwargs = {key:fit_kwargs[key] for key in signature(self._step).parameters.keys() if key in fit_kwargs}
+        display_kwargs = {key:fit_kwargs[key] for key in signature(self._display).parameters.keys() if key in fit_kwargs}
+        predict_kwargs = {key:fit_kwargs[key] for key in signature(self._predict).parameters.keys() if key in fit_kwargs}
         self.log_ = []
 
-        for self._step_n in tqdm(range(n_steps), desc) if verbosity == 1 else range(n_steps):
+        for self._step_n in tqdm(range(n_steps), self.desc) if verbosity == 1 else range(n_steps):
             self.log_.append(self._step(**step_kwargs))
 
             if verbosity == 2 and self._step_n%rate == 0:

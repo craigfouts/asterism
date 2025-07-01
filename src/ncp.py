@@ -3,50 +3,13 @@ Craig Fouts (craig.fouts@uu.igp.se)
 """
 
 import torch
-import torch.nn as nn
-from nets import MLP
-from torch.optim import Adam
-from tqdm import tqdm
+from torch import nn
+from base import buildmethod, HotTopic
+from nets import OPTIM, MLP
 from utils import shuffle
 
 class Encoder(nn.Module):
-    """Implementation of a neural clustering process encoder. Based on methods
-    proposed by Ari Pakman, Yueqi Wang, Catalin Mitelut, JinHyung Lee, and Liam
-    Paninski.
-    
-    https://proceedings.mlr.press/v119/pakman20a.html
-
-    Parameters
-    ----------
-    in_channels : int
-        Number of input channels.
-    wc_channels : int | tuple | list, default=(64, 64)
-        Architecture of the within-cluster invariant representation encoder.
-    bc_channels : int | tuple | list, default=(128, 128)
-        Architecture of the between-cluster invariant representation encoder.
-    lp_channels : int | tuple | list, default=(32, 32)
-        Architecture of the topic log probability encoder.
-    activation : str, default='prelu'
-        Hidden activation function.
-    
-    Attributes
-    ----------
-    wc_model : MLP
-        Within-cluster invariant representation encoder.
-    us_model : MLP
-        Unassigned sample invariant representation encoder.
-    bc_model : MLP
-        Between-cluster invariant representation encoder.
-    lp_model : MLP
-        Topic log probability encoder.
-
-    Usage
-    -----
-    >>> model = Encoder(in_channels, *args, **kwargs)
-    >>> topics = model(data)
-    """
-
-    def __init__(self, in_channels, wc_channels=(64, 64), bc_channels=(128, 128), lp_channels=(32, 32), activation='prelu'):
+    def __init__(self, in_channels, wc_channels=(128, 128), bc_channels=(128, 128), lp_channels=(128, 128), act_layer='prelu'):
         super().__init__()
 
         self.in_channels = in_channels
@@ -54,170 +17,116 @@ class Encoder(nn.Module):
         self.bc_channels = (bc_channels,) if isinstance(bc_channels, int) else bc_channels
         self.lp_channels = (lp_channels,) if isinstance(lp_channels, int) else lp_channels
         self.lp_channels += (1,)*(self.lp_channels[-1] != 1)
+        self.act_layer = act_layer
 
-        self.wc_model = MLP(in_channels, *self.wc_channels, activation=activation)
-        self.us_model = MLP(in_channels, *self.wc_channels, activation=activation)
-        self.bc_model = MLP(self.wc_channels[-1], *self.bc_channels, activation=activation)
-        self.lp_model = MLP(self.wc_channels[-1] + self.bc_channels[-1], *self.lp_channels, activation=activation, out_bias=False)
+        self._wc_model = MLP(self.in_channels, *self.wc_channels, act_layer=self.act_layer)
+        self._us_model = MLP(self.in_channels, *self.wc_channels, act_layer=self.act_layer)
+        self._bc_model = MLP(self.wc_channels[-1], *self.bc_channels, act_layer=self.act_layer)
+        self._lp_model = MLP(self.wc_channels[-1] + self.bc_channels[-1], *self.lp_channels, act_layer=self.act_layer, final_bias=False)
 
-    def build(self, data):
-        self.batch_size = data.shape[0] if len(data.shape) > 2 else 1
-        self.n_samples, self.n_topics = data.shape[-2], 1
-        self.wc, self.us = self.wc_model(data), self.us_model(data)
-        self.WC = torch.zeros((self.batch_size, 1, self.wc_channels[-1]))
-        self.WC[:, 0], self.US = self.wc[:, 0], self.us[:, 2:].sum(1)
+    def _build(self, X):
+        self._batch_size = X.shape[0] if X.ndim > 2 else 1
+        self._n_samples, self._n_topics = X.shape[-2], 1
+        self._wc, self._us = self._wc_model(X), self._us_model(X)
+        self._WC = torch.zeros((self._batch_size, 1, self.wc_channels[-1]))
+        self._WC[:, 0], self._US = self._wc[:, 0], self._us[:, 2:].sum(1)
 
         return self
     
-    def update(self, sample, topics):
-        n_topics = topics[:sample].unique().shape[0]
+    def _update(self, idx, topics):
+        n_topics = topics[:idx].unique().shape[0]
 
-        if n_topics == self.n_topics:
-            self.WC[:, topics[sample - 1]] += self.wc[:, sample - 1]
+        if n_topics == self._n_topics:
+            self._WC[:, topics[idx - 1]] += self._wc[:, idx - 1]
         else:
-            self.WC = torch.cat((self.WC, self.wc[:, sample - 1].unsqueeze(1)), 1)
+            self._WC = torch.cat((self._WC, self._wc[:, idx - 1].unsqueeze(1)), 1)
 
-        if sample == self.n_samples - 1:
-            self.US = torch.zeros(self.batch_size, self.wc_channels[-1])
+        if idx == self._n_samples - 1:
+            self._US = torch.zeros((self._batch_size, self.wc_channels[-1]))
         else:
-            self.US -= self.us[:, sample]
+            self._US -= self._us[:, idx]
+
+        self._n_topics = n_topics
 
         return n_topics
     
-    def logprobs(self, sample):
-        logprobs = torch.zeros(self.batch_size, self.n_topics + 1)
-        topic_range = torch.arange(self.n_topics)
-        US_k = self.US.repeat(self.n_topics, 1, 1)
-        WC_k = self.WC.repeat(self.n_topics, 1, 1, 1)
-        WC_k[topic_range, :, topic_range] += self.wc[:, sample]
-        WC_K = torch.cat((self.WC, self.wc[:, sample].unsqueeze(1)), 1)
-        BC_k, BC_K = self.bc_model(WC_k).sum(2), self.bc_model(WC_K).sum(1)
-        logprobs[:, :-1] = self.lp_model(torch.cat((US_k, BC_k), -1))[..., 0].T
-        logprobs[:, -1] = self.lp_model(torch.cat((self.US, BC_K), 1)).squeeze()
+    def _logprobs(self, idx):
+        US_k = self._US.repeat(self._n_topics, 1, 1)
+        WC_k = self._WC.repeat(self._n_topics, 1, 1, 1)
+        topic_range = torch.arange(self._n_topics)
+        WC_k[topic_range, :, topic_range] += self._wc[:, idx]
+        WC_K = torch.cat((self._WC, self._wc[:, idx].unsqueeze(1)), 1)
+        BC_k, BC_K = self._bc_model(WC_k).sum(2), self._bc_model(WC_K).sum(1)
+        logprobs = torch.zeros((self._batch_size, self._n_topics + 1))
+        logprobs[:, :-1] = self._lp_model(torch.cat((US_k, BC_k), -1))[..., 0].T
+        logprobs[:, -1] = self._lp_model(torch.cat((self._US, BC_K), 1)).squeeze()
+        m, _ = logprobs.max(1, keepdim=True)
+        logprobs = logprobs - m - (logprobs - m).exp().sum(1, keepdim=True).log()
 
         return logprobs
     
-    def sample(self, sample, normalize=True, return_topics=True):
-        logprobs = self.logprobs(sample)
-
-        if normalize:
-            m, _ = logprobs.max(1, keepdim=True)
-            logprobs = logprobs - m - (logprobs - m).exp().sum(1, keepdim=True).log()
-
-        if return_topics:
-            topics = torch.multinomial(logprobs.exp(), 1).T[0]
-
-            return topics
-        
-        return logprobs
-    
-    def evaluate(self, data, labels):
-        self.build(data)
+    @buildmethod
+    def evaluate(self, X, y):
         nll = 0
 
-        for i in range(2, self.n_samples):
-            self.n_topics = self.update(i, labels)
-            nll -= self.sample(i, return_topics=False)[:, labels[i]].mean()
+        for i in range(2, self._n_samples):
+            self._update(i, y)
+            logprobs = self._logprobs(i)
+            nll -= logprobs[:, y[i]].mean()
 
         return nll
     
-    def forward(self, data):
-        self.build(data)
-        topics = torch.zeros(data.shape[1], dtype=torch.int32)
+    @buildmethod
+    def forward(self, X):
+        z = torch.zeros(X.shape[-2], dtype=torch.int32)
 
-        for i in range(2, self.n_samples):
-            self.n_topics = self.update(i, topics)
-            topics[i] = torch.mode(self.sample(i))[0].item()
+        for i in range(2, self._n_samples):
+            self._update(i, z)
+            probs = self._logprobs(i).exp()
+            z[i] = torch.mode(torch.multinomial(probs, 1).squeeze()).values.item()
 
-        return topics
-    
-class NCP(nn.Module):
-    """Implementation of a neural clustering process model. Based on methods
-    proposed by Ari Pakman, Yueqi Wang, Catalin Mitelut, JinHyung Lee, and Liam
-    Paninski.
-    
-    https://proceedings.mlr.press/v119/pakman20a.html
+        return z
 
-    Parameters
-    ----------
-    wc_channels : int | tuple | list, default=(128, 128)
-        Architecture of the within-cluster invariant encoder.
-    bc_channels : int | tuple | list, default=(512, 512)
-        Architecture of the between-cluster invariant encoder.
-    lp_channels : int | tuple | list, default=(128, 128)
-        Architecture of the topic log probability encoder.
-    activation : str, default='prelu'
-        Hidden activation function.
-
-    Attributes
-    ----------
-    encoder : Encoder
-        Neural clustering process encoder.
-    optimizer : Optimzer
-        Optimization handler.
-    nll_log : list
-        Record of the total negative log likelihood for each step.
-    
-    Ussage
-    ------
-    >>> model = NCP(*args, **kwargs).fit(generator, *args, **kwargs)
-    >>> topics = model(data)
-    """
-
-    def __init__(self, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), activation='prelu'):
-        super().__init__()
+class NCP(HotTopic, nn.Module):
+    def __init__(self, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), act_layer='prelu', optim='adam', desc='NCP'):
+        super().__init__(desc, check=False)
 
         self.wc_channels = wc_channels
         self.bc_channels = bc_channels
         self.lp_channels = lp_channels
-        self.activation = activation
+        self.act_layer = act_layer
+        self.optim = optim
 
-        self.encoder = None
-        self.optimizer = None
-        self.nll_log = []
-    
-    def build(self, in_channels, learning_rate=1e-4, weight_decay=1e-2):
-        self.encoder = Encoder(in_channels, self.wc_channels, self.bc_channels, self.lp_channels, self.activation)
-        self.optimizer = Adam(self.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    def _build(self, X, learning_rate=1e-4, weight_decay=1e-2, batch_size=16):
+        self._encoder = Encoder(X.shape[-1], self.wc_channels, self.bc_channels, self.lp_channels, self.act_layer)
+        self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        self._batch_size = X.shape[0] if X.ndim > 2 and X.shape[0] > batch_size else batch_size
 
         return self
     
-    def step(self, nll=None):
-        self.optimizer.step()
-        self.optimizer.zero_grad()
+    def _step(self, X, y, n_perms=6, batch_size=16, n_samples=64):
+        mask, nll = torch.randperm(X.shape[0])[:batch_size], 0
 
-        if nll is not None:
-            self.nll_log.append(nll)
+        for _ in range(n_perms):
+            data, labels = shuffle(X[mask], y, sort=True, cut=n_samples)
+            perm_nll = self._encoder.evaluate(data, labels)
+            perm_nll.backward()
+            nll += perm_nll.item()
 
-        return self
+        self._optim.step()
+        self._optim.zero_grad()
+
+        return nll
     
-    def evaluate(self, data, labels, grad=False):
-        nll = self.encoder.evaluate(data, labels)
+    def _predict(self, X):
+        if X.ndim < 3 or X.shape[0] == 1:
+            X = X.repeat(self._batch_size, 1, 1)
 
-        if grad:
-            nll.backward()
+        topics = self._encoder(X)
 
-        return nll.item()
+        return topics
     
-    def fit(self, data, labels, n_steps=200, n_permutations=6, learning_rate=1e-4, weight_decay=1e-2, batch_size=16, n_samples=64, verbosity=1, description='NCP'):
-        self.build(data.shape[-1], learning_rate, weight_decay)
-        self.batch_size = max(data.shape[0], batch_size)
+    def forward(self, X):
+        topics = self._predict(X)
 
-        for _ in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
-            mask, nll = torch.randperm(data.shape[0])[:batch_size], 0
-
-            for _ in range(n_permutations):
-                X, y = shuffle(data[mask], labels, sort=True, cut=n_samples)
-                nll += self.evaluate(X, y, grad=True)
-
-            self.step(nll)
-
-        return self
-    
-    def forward(self, data):
-        if data.shape[0] == 1 or len(data.shape) == 2:
-            data = data.repeat(self.batch_size, 1, 1)
-
-        topics = self.encoder(data)
-        
         return topics

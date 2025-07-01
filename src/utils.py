@@ -14,33 +14,16 @@ from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
 def to_list(length, *items):
-    """Converts each item into a list of specified length, truncating if the 
-    item is a tuple or list of longer length and repeating the last value if the 
-    item is a tuple or list of shorter length.
-
-    Parameters
-    ----------
-    length : int
-        Length of item list(s).
-    items : any
-        Item(s) to convert into list(s).
-
-    Returns
-    -------
-    list
-        list(s).
-    """
-    
     lists = []
 
     for item in items:
         if isinstance(item, (tuple, list)):
             lists.append(item[:length] + item[-1:]*(length - len(item)))
         else:
-            lists.append([item]*(length + 1))
+            lists.append([item]*length)
 
-    lists = np.squeeze(lists)[..., :-1].tolist()
-
+    if len(lists) == 1:
+        return lists[0]
     return lists
 
 @singledispatch
@@ -124,26 +107,6 @@ def _(data, k=3, n_steps=10, n_perms=100, verbosity=1, desc='KMeans'):
     return labels
 
 def format_ax(ax, title=None, aspect='equal', show_ax=True):
-    """Formats the given Matplotlib axis in place by setting the title, aspect 
-    scaling, and axes visibility.
-    
-    Parameters
-    ----------
-    ax : axis
-        Matplotlib axis.
-    title : str, default=None
-       Axis title.
-    aspect : str, default='equal'
-        Aspect scaling.
-    show_ax : bool, default=True
-        Whether to make axes visible.
-
-    Returns
-    -------
-    axis
-        Formated Matplotlib axis.
-    """
-
     if title is not None:
         ax.set_title(title)
 
@@ -169,37 +132,6 @@ def make_figure(n_sections=1, figsize=5, colormap=None, labels=None):
     return fig, axes
 
 def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
-    """Displays scatter plot(s) of sample points colored by label and separated
-    by section.
-
-    Parameters
-    ----------
-    data : ndarray
-        Sample dataset.
-    labels : ndarray
-        Sample labels.
-    sectioned : bool, default=False
-        Whether the dataset includes a section column.
-    size : int, default=15
-        Sample point size.
-    figsize : int | tuple | list, default=10
-        Scatter plot size.
-    title : str | tuple | list, default=None
-        Scatter plot title(s).
-    colormap : str | dict, default='Set3'
-        Label color dictionary.
-    show_ax : bool, default=False
-        Whether to make axes visible.
-    show_colorbar : bool, default=False
-        Whether to show a colorbar.
-    path : str, default=None
-        Scatter plot save path.
-
-    Returns
-    -------
-    None
-    """
-
     if not sectioned:
         data = np.hstack((np.zeros((data.shape[0], 1)), data))
 

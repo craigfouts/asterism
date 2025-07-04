@@ -8,7 +8,7 @@ from base import HotTopic
 from nets import OPTIM, MLP
 from utils import relabel
         
-class QAE(HotTopic, nn.Module):
+class VQAE(HotTopic, nn.Module):
     def __init__(self, max_topics=100, *, channels=(64, 32), optim='adam', desc='QAE', random_state=None):
         super().__init__(desc, random_state)
 

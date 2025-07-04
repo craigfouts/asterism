@@ -1,3 +1,7 @@
+"""
+Craig Fouts (craig.fouts@uu.igp.se)
+"""
+
 from torch import nn, optim
 
 NORM = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}

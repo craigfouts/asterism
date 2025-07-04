@@ -60,7 +60,7 @@ def _(labels, target=None):
 
 def shuffle(data, labels=None, sort=False, cut=None):
     mask = np.random.permutation(data.shape[-2])[:cut]
-    data = data[:, mask] if len(data.shape) > 2 else data[mask]
+    data = data[:, mask] if data.ndim > 2 else data[mask]
 
     if labels is not None:
         labels = relabel(labels[mask]) if sort else labels[mask]

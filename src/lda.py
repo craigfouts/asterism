@@ -17,7 +17,7 @@ from base import HotTopic
 from utils import kmeans, relabel
 
 class GibbsLDA(HotTopic):
-    def __init__(self, n_topics=3, *, vocab_size=10, doc_size=10, dt_prior=1., tw_prior=1., burn_in=50, desc='LDA', random_state=None):
+    def __init__(self, n_topics=3, *, vocab_size=10, doc_size=10, dt_prior=1., tw_prior=1., desc='LDA', random_state=None):
         super().__init__(desc, random_state)
 
         self.n_topics = n_topics
@@ -25,15 +25,15 @@ class GibbsLDA(HotTopic):
         self.doc_size = doc_size
         self.dt_prior = dt_prior
         self.tw_prior = tw_prior
-        self.burn_in = burn_in
+
+        self._n_steps = 100
         
-    def _build(self, X, n_steps=100):
-        self.n_features_in_, self.log_ = X.shape[-1], []
+    def _build(self, X):
         knn = cdist(X, X).argsort(-1)[:, :self.doc_size]
         self._docs = kmeans(X, self.vocab_size, verbosity=0)[knn]
         self._words = self._docs.flatten()
         topics = self.random_state_.choice(self.n_topics, self._words.shape[0])
-        self._topics = np.zeros((n_steps, self._words.shape[0]), dtype=np.int32)
+        self._topics = np.zeros((self._n_steps, self._words.shape[0]), dtype=np.int32)
         self._topics[-1:] = topics
         self._dt_counts = np.eye(self.n_topics)[topics.reshape(*self._docs.shape)].sum(1)
         self._tw_counts = (topics == np.arange(self.n_topics)[None].T)@np.eye(self.vocab_size)[self._words]
@@ -87,8 +87,10 @@ class GibbsLDA(HotTopic):
         return likelihood
     
     def _predict(self, y=None):
-        topics = mode(mode(self._topics[self.burn_in:]).mode.reshape(*self._docs.shape), -1).mode
-        topics = relabel(topics, y)
+        burn_in = self._n_steps//2
+        word_topics = mode(self._topics[burn_in:]).mode
+        doc_topics = mode(word_topics.reshape(*self._docs.shape), -1).mode
+        topics = relabel(doc_topics, y)
         
         return topics
 

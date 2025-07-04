@@ -1,3 +1,7 @@
+"""
+Craig fouts (craig.fouts@uu.igp.se)
+"""
+
 import numpy as np
 import torch
 from abc import ABCMeta, abstractmethod
@@ -73,6 +77,7 @@ class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         self.ensure_all_finite = ensure_all_finite
         self.check = check
 
+        self._n_steps = 100
         self._step_n = 0
 
     @abstractmethod
@@ -94,14 +99,17 @@ class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
     @checkmethod
     @buildmethod
-    def fit(self, X, y=None, n_steps=100, verbosity=1, rate=10, **kwargs):
+    def fit(self, X, y=None, n_steps=None, verbosity=1, rate=10, **kwargs):
         fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs = {key:fit_kwargs[key] for key in signature(self._step).parameters.keys() if key in fit_kwargs}
         display_kwargs = {key:fit_kwargs[key] for key in signature(self._display).parameters.keys() if key in fit_kwargs}
         predict_kwargs = {key:fit_kwargs[key] for key in signature(self._predict).parameters.keys() if key in fit_kwargs}
         self.log_ = []
 
-        for self._step_n in tqdm(range(n_steps), self.desc) if verbosity == 1 else range(n_steps):
+        if n_steps is not None:
+            self._n_steps = n_steps
+
+        for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
             self.log_.append(self._step(**step_kwargs))
 
             if verbosity == 2 and self._step_n%rate == 0:

@@ -9,15 +9,17 @@ from nets import OPTIM, MLP
 from utils import shuffle
 
 class Encoder(nn.Module):
-    def __init__(self, in_channels, wc_channels=(128, 128), bc_channels=(128, 128), lp_channels=(128, 128), act_layer='prelu'):
+    def __init__(self, in_channels, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), act_layer='prelu'):
         super().__init__()
 
         self.in_channels = in_channels
         self.wc_channels = (wc_channels,) if isinstance(wc_channels, int) else wc_channels
         self.bc_channels = (bc_channels,) if isinstance(bc_channels, int) else bc_channels
         self.lp_channels = (lp_channels,) if isinstance(lp_channels, int) else lp_channels
-        self.lp_channels += (1,)*(self.lp_channels[-1] != 1)
         self.act_layer = act_layer
+
+        if self.lp_channels[-1] != 1:
+            self.lp_channels += (1,)
 
         self._wc_model = MLP(self.in_channels, *self.wc_channels, act_layer=self.act_layer)
         self._us_model = MLP(self.in_channels, *self.wc_channels, act_layer=self.act_layer)
@@ -96,6 +98,8 @@ class NCP(HotTopic, nn.Module):
         self.lp_channels = lp_channels
         self.act_layer = act_layer
         self.optim = optim
+
+        self._n_steps = 200
 
     def _build(self, X, learning_rate=1e-4, weight_decay=1e-2, batch_size=16):
         self._encoder = Encoder(X.shape[-1], self.wc_channels, self.bc_channels, self.lp_channels, self.act_layer)

@@ -15,7 +15,7 @@ Implementations of semantic segmentation algorithms and spatial topic models app
 ### Predicted Topics
 ![image](https://github.com/user-attachments/assets/1f24752d-1450-45a5-b3d1-c72b980d37f4)
 
-## Quantized Autoencoder
+## Vector Quantized Autoencoder
 ### Ground Truth
 ![image](https://github.com/user-attachments/assets/2f489ae6-35e8-4c39-81f1-cf508f073799)
 

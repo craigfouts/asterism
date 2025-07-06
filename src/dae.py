@@ -58,8 +58,8 @@ class VQAE(HotTopic, nn.Module):
 
         return loss.item()
     
-    def _predict(self, X, y=None):
+    def _predict(self, X):
         z = self._encoder(X)
-        topics = relabel(self._quantize(z), y)
+        topics = self._quantize(z)
 
         return topics

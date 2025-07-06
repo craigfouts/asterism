@@ -10,6 +10,7 @@ from inspect import getcallargs, signature
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_array, check_random_state
 from tqdm import tqdm
+from utils import relabel
 
 @singledispatch
 def check(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
@@ -99,8 +100,8 @@ class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
     @checkmethod
     @buildmethod
-    def fit(self, X, y=None, n_steps=None, verbosity=1, rate=10, **kwargs):
-        fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
+    def fit(self, X, y=None, n_steps=None, verbosity=1, rate=10, sort=True, **kwargs):  # TODO: clean up this method
+        fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)  # TODO: make get_kwargs utility
         step_kwargs = {key:fit_kwargs[key] for key in signature(self._step).parameters.keys() if key in fit_kwargs}
         display_kwargs = {key:fit_kwargs[key] for key in signature(self._display).parameters.keys() if key in fit_kwargs}
         predict_kwargs = {key:fit_kwargs[key] for key in signature(self._predict).parameters.keys() if key in fit_kwargs}
@@ -116,6 +117,9 @@ class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
                 self._display(**display_kwargs)
 
         self.labels_ = self._predict(**predict_kwargs)
+
+        if sort:
+            self.labels_ = relabel(self.labels_, y)
 
         return self
     

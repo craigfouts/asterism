@@ -70,7 +70,9 @@ class GibbsLDA(HotTopic):
         probs /= probs.sum()
         topic = self.random_state_.choice(self.n_topics, p=probs)
 
-        return (topic, probs) if return_probs else topic
+        if return_probs:
+            return topic, probs
+        return topic
     
     def _step(self):
         indices = self.random_state_.permutation(self._words.shape[0])

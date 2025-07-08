@@ -6,14 +6,14 @@ Implementations of semantic segmentation algorithms and spatial topic models app
 ![image](https://github.com/user-attachments/assets/a2d45a0b-6b8c-4a2b-a8ec-d651a9c35b66) 
 
 ### Predicted Topics
-![image](https://github.com/user-attachments/assets/2161553c-9126-4532-9004-8b165d5fcfe5)
+![image](https://github.com/user-attachments/assets/c2155e23-4e24-4541-a180-edc6151e40f8)
 
 ## Spatial Latent Dirichlet Allocation
 ### Cell Types
-![image](https://github.com/user-attachments/assets/68e0bbce-8e2f-4f86-8243-827ac9b21c61)
+![image](https://github.com/user-attachments/assets/c90c5aad-15c6-4d92-a094-1dd11e00ce23)
 
 ### Predicted Topics
-![image](https://github.com/user-attachments/assets/1f24752d-1450-45a5-b3d1-c72b980d37f4)
+![image](https://github.com/user-attachments/assets/302f2efb-3081-4540-87b3-7cba91350fb0)
 
 ## Vector Quantized Autoencoder
 ### Ground Truth

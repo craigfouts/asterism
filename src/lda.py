@@ -15,14 +15,14 @@ from base import HotTopic
 from utils import kmeans
 
 class GibbsLDA(HotTopic):
-    def __init__(self, n_topics=3, *, doc_size=10, vocab_size=10, tw_prior=.1, dt_prior=.1, desc='LDA', random_state=None):
+    def __init__(self, n_topics=3, *, doc_size=10, vocab_size=10, dt_prior=.1, tw_prior=.1, desc='LDA', random_state=None):
         super().__init__(desc, random_state)
 
         self.n_topics = n_topics
         self.doc_size = doc_size
         self.vocab_size = vocab_size
-        self.tw_prior = tw_prior
         self.dt_prior = dt_prior
+        self.tw_prior = tw_prior
 
         self._n_steps = 100
         
@@ -33,40 +33,40 @@ class GibbsLDA(HotTopic):
         topics = self.random_state_.choice(self.n_topics, self._words.shape[0])
         self._topics = np.zeros((self._n_steps, self._words.shape[0]), dtype=np.int32)
         self._topics[-1:] = topics
-        self._tw_counts = (topics == np.arange(self.n_topics)[None].T)@np.eye(self.vocab_size)[self._words]
-        self._dt_counts = np.eye(self.n_topics)[topics.reshape(*self._docs.shape)].sum(1)
+        self._dt_post = np.eye(self.n_topics)[topics.reshape(*self._docs.shape)].sum(1)
+        self._tw_post = (topics == np.arange(self.n_topics)[None].T)@np.eye(self.vocab_size)[self._words]
 
         return self
     
-    def _query(self, index):
-        topic = self._topics[self._step_n - 1, index]
-        doc = index//self._docs.shape[1]
-        word = self._words[index]
+    def _query(self, idx):
+        doc = idx//self._docs.shape[1]
+        topic = self._topics[self._step_n - 1, idx]
+        word = self._words[idx]
 
-        return topic, doc, word
+        return doc, topic, word
     
-    def _decrement(self, topic, doc, word, return_counts=False):
-        self._tw_counts[topic, word] -= 1
-        self._dt_counts[doc, topic] -= 1
+    def _decrement(self, doc, topic, word, return_posteriors=False):
+        self._dt_post[doc, topic] -= 1
+        self._tw_post[topic, word] -= 1
 
-        if return_counts:
-            return self._tw_counts, self._dt_counts
+        if return_posteriors:
+            return self._dt_post, self._tw_post
         return self
     
-    def _increment(self, topic, doc, word, return_counts=False):
-        self._tw_counts[topic, word] += 1
-        self._dt_counts[doc, topic] += 1
+    def _increment(self, doc, topic, word, return_posteriors=False):
+        self._dt_post[doc, topic] += 1
+        self._tw_post[topic, word] += 1
 
-        if return_counts:
-            return self._tw_counts, self._dt_counts
+        if return_posteriors:
+            return self._dt_post, self._tw_post
         return self
         
     def _sample(self, doc, word, return_probs=False):
-        tw_ratio = self._tw_counts[:, word] + self.tw_prior
-        tw_ratio /= (self._tw_counts + self.tw_prior).sum(-1)
-        dt_ratio = self._dt_counts[doc] + self.dt_prior
-        dt_ratio /= dt_ratio.sum()
-        probs = tw_ratio*dt_ratio
+        dt_probs = self._dt_post[doc] + self.dt_prior
+        dt_probs /= dt_probs.sum()
+        tw_probs = self._tw_post[:, word] + self.tw_prior
+        tw_probs /= (self._tw_post + self.tw_prior).sum(-1)
+        probs = dt_probs*tw_probs
         probs /= probs.sum()
         topic = self.random_state_.choice(self.n_topics, p=probs)
 
@@ -75,41 +75,39 @@ class GibbsLDA(HotTopic):
         return topic
     
     def _step(self):
-        indices = self.random_state_.permutation(self._words.shape[0])
+        idx = self.random_state_.permutation(self._words.shape[0])
         likelihood = 0
 
-        for index in indices:
-            topic, doc, word = self._query(index)
-            self._decrement(topic, doc, word)
+        for i in idx:
+            doc, topic, word = self._query(i)
+            self._decrement(doc, topic, word)
             new_topic, probs = self._sample(doc, word, return_probs=True)
-            self._increment(new_topic, doc, word)
-            self._topics[self._step_n, index] = new_topic
+            self._increment(doc, new_topic, word)
+            self._topics[self._step_n, i] = new_topic
             likelihood += probs[new_topic]
 
         return likelihood
     
     def _predict(self):
         burn_in = self._n_steps//2
-        labels = mode(self._topics[burn_in:]).mode
-        topics = mode(labels.reshape(*self._docs.shape), -1).mode
+        word_topics = mode(self._topics[burn_in:]).mode
+        doc_topics = mode(word_topics.reshape(*self._docs.shape), -1).mode
         
-        return topics
+        return doc_topics
 
 class PyroLDA(HotTopic):
-    def __init__(self, n_topics=3, *, doc_size=10, vocab_size=10, tw_prior=.1, dt_prior=.1, optim='adam', desc='LDA'):
+    def __init__(self, n_topics=3, *, doc_size=10, vocab_size=10, dt_prior=.1, tw_prior=.1, optim='adam', desc='LDA'):
         pyro.clear_param_store()
         super().__init__(desc)
 
         self.n_topics = n_topics
         self.doc_size = doc_size
         self.vocab_size = vocab_size
-        self.tw_prior = tw_prior
         self.dt_prior = dt_prior
+        self.tw_prior = tw_prior
         self.optim = optim
 
         self._n_steps = 1000
-        self._tw_prior = self.tw_prior*torch.ones(self.vocab_size)
-        self._dt_prior = self.dt_prior*torch.ones(self.n_topics)
 
     def _build(self, X, learning_rate=1e-1, batch_size=100):
         knn = torch.cdist(X, X).topk(self.doc_size, largest=False).indices
@@ -123,10 +121,10 @@ class PyroLDA(HotTopic):
     
     def _model(self, X):
         with pyro.plate('topics', self.n_topics):
-            tw_dists = pyro.sample('tw_dists', Dirichlet(self._tw_prior))
+            tw_dists = pyro.sample('tw_dists', Dirichlet(self.tw_prior*torch.ones(self.vocab_size)))
 
         with pyro.plate('docs', X.shape[1], self._batch_size) as mask:
-            dt_dists = pyro.sample('dt_dists', Dirichlet(self._dt_prior))
+            dt_dists = pyro.sample('dt_dists', Dirichlet(self.dt_prior*torch.ones(self.n_topics)))
 
             with pyro.plate('words', X.shape[0]):
                 labels = pyro.sample('labels', Categorical(dt_dists), infer={'enumerate': 'parallel'})
@@ -135,8 +133,10 @@ class PyroLDA(HotTopic):
         return self
     
     def _guide(self, X):
-        self._tw_post = pyro.param('tw_post', lambda: torch.ones((self.n_topics, self.vocab_size)), constraint=constraints.greater_than(.5))
-        self._dt_post = pyro.param('dt_post', lambda: torch.ones(X.shape[1], self.n_topics), constraint=constraints.greater_than(.5))
+        dt_lambda = lambda: torch.ones((X.shape[1], self.n_topics))
+        tw_lambda = lambda: torch.ones((self.n_topics, self.vocab_size))
+        self._dt_post = pyro.param('dt_post', dt_lambda, constraint=constraints.greater_than(.5))
+        self._tw_post = pyro.param('tw_post', tw_lambda, constraint=constraints.greater_than(.5))
 
         with pyro.plate('topics', self.n_topics):
             pyro.sample('tw_dists', Dirichlet(self._tw_post))

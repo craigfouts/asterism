@@ -6,12 +6,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from functools import singledispatch
+from inspect import signature
 from matplotlib import cm, colormaps, colors
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
+
+def get_kwargs(*func, **kwargs):
+    func_kwargs = []
+
+    for f in func:
+        keys = signature(f).parameters.keys()
+        func_kwargs.append({key:kwargs[key] for key in keys if key in kwargs})
+
+    if len(func_kwargs) == 1:
+        return func_kwargs[0]
+    return func_kwargs
 
 def to_list(length, *items):
     lists = []

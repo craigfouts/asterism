@@ -10,7 +10,7 @@ from inspect import getcallargs, signature
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_array, check_random_state
 from tqdm import tqdm
-from utils import relabel
+from utils import get_kwargs, relabel
 
 @singledispatch
 def check(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
@@ -58,8 +58,7 @@ def buildmethod(method):
     def wrap(self, *args, **kwargs):
         if hasattr(self, '_build'):
             method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
-            build_params = signature(self._build).parameters.keys()
-            build_kwargs = {key:val for key, val in method_kwargs.items() if key in build_params}
+            build_kwargs = get_kwargs(self._build, **method_kwargs)
             self._build(**build_kwargs)
 
         return method(self, *args, **kwargs)
@@ -100,11 +99,9 @@ class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
     @checkmethod
     @buildmethod
-    def fit(self, X, y=None, n_steps=None, verbosity=1, rate=10, sort=True, **kwargs):  # TODO: clean up this method
-        fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)  # TODO: make get_kwargs utility
-        step_kwargs = {key:fit_kwargs[key] for key in signature(self._step).parameters.keys() if key in fit_kwargs}
-        display_kwargs = {key:fit_kwargs[key] for key in signature(self._display).parameters.keys() if key in fit_kwargs}
-        predict_kwargs = {key:fit_kwargs[key] for key in signature(self._predict).parameters.keys() if key in fit_kwargs}
+    def fit(self, X, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
+        fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
+        step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)
         self.log_ = []
 
         if n_steps is not None:
@@ -113,13 +110,10 @@ class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
             self.log_.append(self._step(**step_kwargs))
 
-            if verbosity == 2 and self._step_n%rate == 0:
+            if verbosity == 2 and self._step_n%display_rate == 0:
                 self._display(**display_kwargs)
 
-        self.labels_ = self._predict(**predict_kwargs)
-
-        if sort:
-            self.labels_ = relabel(self.labels_, y)
+        self.labels_ = relabel(self._predict(**predict_kwargs), y)
 
         return self
     

@@ -13,9 +13,9 @@ class Encoder(nn.Module):
         super().__init__()
 
         self.in_channels = in_channels
-        self.wc_channels = (wc_channels,) if isinstance(wc_channels, int) else wc_channels
-        self.bc_channels = (bc_channels,) if isinstance(bc_channels, int) else bc_channels
-        self.lp_channels = (lp_channels,) if isinstance(lp_channels, int) else lp_channels
+        self.wc_channels = wc_channels
+        self.bc_channels = bc_channels
+        self.lp_channels = lp_channels
         self.act_layer = act_layer
 
         if self.lp_channels[-1] != 1:
@@ -28,7 +28,8 @@ class Encoder(nn.Module):
 
     def _build(self, X):
         self._batch_size = X.shape[0] if X.ndim > 2 else 1
-        self._n_samples, self._n_topics = X.shape[-2], 1
+        self._n_samples, self.n_topics_ = X.shape[-2], 1
+        self._topic_range = torch.arange(self.n_topics_)
         self._wc, self._us = self._wc_model(X), self._us_model(X)
         self._WC = torch.zeros((self._batch_size, 1, self.wc_channels[-1]))
         self._WC[:, 0], self._US = self._wc[:, 0], self._us[:, 2:].sum(1)
@@ -38,7 +39,7 @@ class Encoder(nn.Module):
     def _update(self, idx, topics):
         n_topics = topics[:idx].unique().shape[0]
 
-        if n_topics == self._n_topics:
+        if n_topics == self.n_topics_:
             self._WC[:, topics[idx - 1]] += self._wc[:, idx - 1]
         else:
             self._WC = torch.cat((self._WC, self._wc[:, idx - 1].unsqueeze(1)), 1)
@@ -48,20 +49,19 @@ class Encoder(nn.Module):
         else:
             self._US -= self._us[:, idx]
 
-        self._n_topics = n_topics
+        self.n_topics_, self._topic_range = n_topics, torch.arange(n_topics)
 
         return n_topics
     
     def _logprobs(self, idx):
-        US_k = self._US.repeat(self._n_topics, 1, 1)
-        WC_k = self._WC.repeat(self._n_topics, 1, 1, 1)
-        topic_range = torch.arange(self._n_topics)
-        WC_k[topic_range, :, topic_range] += self._wc[:, idx]
+        WC_k = self._WC.repeat(self.n_topics_, 1, 1, 1)
+        WC_k[self._topic_range, :, self._topic_range] += self._wc[:, idx]
         WC_K = torch.cat((self._WC, self._wc[:, idx].unsqueeze(1)), 1)
         BC_k, BC_K = self._bc_model(WC_k).sum(2), self._bc_model(WC_K).sum(1)
-        logprobs = torch.zeros((self._batch_size, self._n_topics + 1))
-        logprobs[:, :-1] = self._lp_model(torch.cat((US_k, BC_k), -1))[..., 0].T
-        logprobs[:, -1] = self._lp_model(torch.cat((self._US, BC_K), 1)).squeeze()
+        US_k = self._US.repeat(self.n_topics_, 1, 1)
+        logprobs = torch.zeros((self._batch_size, self.n_topics_ + 1))
+        logprobs[:, :-1] = self._lp_model(torch.cat((BC_k, US_k), -1))[..., 0].T
+        logprobs[:, -1] = self._lp_model(torch.cat((BC_K, self._US), 1)).squeeze()
         m, _ = logprobs.max(1, keepdim=True)
         logprobs = logprobs - m - (logprobs - m).exp().sum(1, keepdim=True).log()
 
@@ -85,7 +85,7 @@ class Encoder(nn.Module):
         for i in range(2, self._n_samples):
             self._update(i, z)
             probs = self._logprobs(i).exp()
-            z[i] = torch.mode(torch.multinomial(probs, 1).squeeze()).values.item()
+            z[i] = probs.multinomial(1).squeeze().mode().values.item()
 
         return z
 

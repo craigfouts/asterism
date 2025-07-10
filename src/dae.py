@@ -6,7 +6,6 @@ import torch
 from torch import nn
 from base import HotTopic
 from nets import OPTIM, MLP
-from utils import relabel
         
 class VQAE(HotTopic, nn.Module):
     def __init__(self, max_topics=100, *, channels=(64, 32), optim='adam', desc='QAE', random_state=None):

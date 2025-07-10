@@ -45,19 +45,19 @@ class GibbsLDA(HotTopic):
 
         return doc, topic, word
     
-    def _decrement(self, doc, topic, word, return_posteriors=False):
+    def _decrement(self, doc, topic, word, return_posts=False):
         self._dt_post[doc, topic] -= 1
         self._tw_post[topic, word] -= 1
 
-        if return_posteriors:
+        if return_posts:
             return self._dt_post, self._tw_post
         return self
     
-    def _increment(self, doc, topic, word, return_posteriors=False):
+    def _increment(self, doc, topic, word, return_posts=False):
         self._dt_post[doc, topic] += 1
         self._tw_post[topic, word] += 1
 
-        if return_posteriors:
+        if return_posts:
             return self._dt_post, self._tw_post
         return self
         

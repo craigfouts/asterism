@@ -18,12 +18,12 @@ class VQAE(HotTopic, nn.Module):
         self._n_steps = 100
         
     def _build(self, X, learning_rate=1e-2, weight_decay=1e-2):
-        in_channels = X.shape[-1]
+        n_samples, in_channels = X.shape
         out_channels = (self.channels,) if isinstance(self.channels, int) else self.channels
         self._encoder = MLP(in_channels, *out_channels, norm_layer='batch', act_layer='relu')
         self._decoder = MLP(*out_channels[::-1], in_channels, norm_layer='batch', act_layer='relu')
-        mask = torch.randperm(X.shape[0])[:self.max_topics]
-        self._codebook = nn.Parameter(self._encoder(X)[mask], requires_grad=True)
+        mask = torch.randperm(n_samples)[:self.max_topics]
+        self._codebook = nn.Parameter(self._encoder(X[mask]), requires_grad=True)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
         return self

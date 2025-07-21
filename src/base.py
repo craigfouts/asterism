@@ -19,7 +19,7 @@ def check(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, a
 
     X = check_array(X, accept_sparse=accept_sparse, accept_large_sparse=accept_large_sparse, ensure_all_finite=ensure_all_finite, ensure_min_features=ensure_min_features)
 
-    if np.iscomplex(X.any()) and not accept_complex:
+    if not accept_complex and np.iscomplex(X).any():
         raise ValueError('Complex data not supported.')
 
     return X
@@ -31,7 +31,7 @@ def _(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accep
     
     X = torch.tensor(check_array(X, accept_sparse=accept_sparse, accept_large_sparse=accept_large_sparse, ensure_all_finite=ensure_all_finite, ensure_min_features=ensure_min_features))
 
-    if torch.is_complex(X) and not accept_complex:
+    if not accept_complex and torch.is_complex(X):
         raise ValueError('Complex data not supported.')
 
     return X
@@ -42,7 +42,7 @@ def checkmethod(method, ensure_min_features=1, accept_complex=False, accept_spar
         if hasattr(self, 'random_state'):
             self.random_state_ = check_random_state(self.random_state)
 
-        if hasattr(self, 'check') and self.check:
+        if not hasattr(self, 'check') or self.check:
             X = check(X, 
                 self.ensure_min_features if hasattr(self, 'ensure_min_features') else ensure_min_features, 
                 self.accept_complex if hasattr(self, 'accept_complex') else accept_complex,
@@ -65,17 +65,17 @@ def buildmethod(method):
     return wrap
 
 class HotTopic(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
-    def __init__(self, desc=None, random_state=None, *, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, check=True):
+    def __init__(self, desc=None, random_state=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
         super().__init__()
 
         self.desc = desc
         self.random_state = random_state
+        self.check = check
         self.ensure_min_features = ensure_min_features
         self.accept_complex = accept_complex
         self.accept_sparse = accept_sparse
         self.accept_large_sparse = accept_large_sparse
         self.ensure_all_finite = ensure_all_finite
-        self.check = check
 
         self._n_steps = 100
         self._step_n = 0

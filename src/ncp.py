@@ -71,7 +71,7 @@ class Encoder(nn.Module):
     def evaluate(self, X, y):
         nll = 0
 
-        for i in range(2, self._n_samples):
+        for i in range(1, self._n_samples):
             self._update(i, y)
             logprobs = self._logprobs(i)
             nll -= logprobs[:, y[i]].mean()
@@ -82,7 +82,7 @@ class Encoder(nn.Module):
     def forward(self, X):
         z = torch.zeros(X.shape[-2], dtype=torch.int32)
 
-        for i in range(2, self._n_samples):
+        for i in range(1, self._n_samples):
             self._update(i, z)
             probs = self._logprobs(i).exp()
             z[i] = probs.multinomial(1).squeeze().mode().values.item()
@@ -102,14 +102,14 @@ class NCP(HotTopic, nn.Module):
         self._n_steps = 200
 
     def _build(self, X, learning_rate=1e-4, weight_decay=1e-2, batch_size=16):
+        self._batch_size = X.shape[0] if X.ndim > 2 and X.shape[0] > 1 else batch_size
         self._encoder = Encoder(X.shape[-1], self.wc_channels, self.bc_channels, self.lp_channels, self.act_layer)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
-        self._batch_size = X.shape[0] if X.ndim > 2 and X.shape[0] > batch_size else batch_size
 
         return self
     
-    def _step(self, X, y, n_perms=6, batch_size=16, n_samples=64):
-        mask, nll = torch.randperm(X.shape[0])[:batch_size], 0
+    def _step(self, X, y, n_perms=6, n_samples=64):
+        mask, nll = torch.randperm(X.shape[0])[:self._batch_size], 0
 
         for _ in range(n_perms):
             data, labels = shuffle(X[mask], y, sort=True, cut=n_samples)

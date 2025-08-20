@@ -67,10 +67,9 @@ class Encoder(nn.Module):
         return z
 
 class VAE(BaseEstimator, TransformerMixin, nn.Module):
-    def __init__(self, n_topics=3, *, channels=(64, 32), norm_layer='batch', act_layer='relu', dropout=.2, kld_scale=.1, optim='adam', desc='VAE', random_state=None):
+    def __init__(self, channels=(64, 16), norm_layer='batch', act_layer='relu', dropout=.2, kld_scale=.1, optim='adam', desc='VAE', random_state=None):
         super().__init__()
 
-        self.n_topics = n_topics
         self.channels = channels
         self.norm_layer = norm_layer
         self.act_layer = act_layer

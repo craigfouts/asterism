@@ -43,14 +43,13 @@ class MLP(nn.Sequential):
         return module
     
 class Encoder(nn.Module):
-    def __init__(self, *channels, norm_layer='batch', act_layer='relu', dropout=.2, kld_scale=.1):
+    def __init__(self, *channels, norm_layer='batch', act_layer='relu', dropout=.2):
         super().__init__()
 
         self.channels = channels if len(channels) > 2 else (channels[0], (channels[0] + channels[-1])//2, channels[-1])
         self.norm_layer = norm_layer
         self.act_layer = act_layer
         self.dropout = dropout
-        self.kld_scale = kld_scale
 
         self._e_model = MLP(*self.channels[:-1], norm_layer=self.norm_layer, act_layer=self.act_layer, dropout=self.dropout, final_norm=self.norm_layer, final_act=self.act_layer, final_dropout=dropout)
         self._m_model, self._s_model = MLP(*self.channels[-2:]), MLP(*self.channels[-2:])
@@ -62,7 +61,7 @@ class Encoder(nn.Module):
         z = m + s_exp*torch.randn_like(s_exp)
 
         if return_kld:
-            kld = self.kld_scale*(m**2 + s_exp**2 - s_log - .5).sum()
+            kld = (m**2 + s_exp**2 - s_log - .5).sum()
 
             return z, kld
         return z
@@ -86,7 +85,7 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
     def _build(self, X, learning_rate=1e-2, batch_size=32):
         self._n_samples, in_channels = X.shape
         self._loader = DataLoader(X, batch_size, shuffle=True)
-        self._encoder = Encoder(in_channels, *self.channels, norm_layer=self.norm_layer, act_layer=self.act_layer, dropout=self.dropout, kld_scale=self.kld_scale)
+        self._encoder = Encoder(in_channels, *self.channels, norm_layer=self.norm_layer, act_layer=self.act_layer, dropout=self.dropout)
         self._decoder = MLP(*self.channels[::-1], in_channels, norm_layer=self.norm_layer, act_layer=self.act_layer, dropout=self.dropout)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate)
 
@@ -98,7 +97,7 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
         for x in self._loader:
             z, kl = self._encoder(x, return_kld=True)
             x_ = self._decoder(z)
-            x_loss = (x_ - x).square().sum().sqrt() + kl
+            x_loss = (x_ - x).square().sum().sqrt() + self.kld_scale*kl
             x_loss.backward()
             loss += x_loss.item()
 

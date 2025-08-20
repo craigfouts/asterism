@@ -105,6 +105,7 @@ class NCP(HotTopic, nn.Module):
         self._batch_size = X.shape[0] if X.ndim > 2 and X.shape[0] > 1 else batch_size
         self._encoder = Encoder(X.shape[-1], self.wc_channels, self.bc_channels, self.lp_channels, self.act_layer)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        self.train()
 
         return self
     
@@ -123,6 +124,8 @@ class NCP(HotTopic, nn.Module):
         return nll
     
     def _predict(self, X):
+        self.eval()
+
         if X.ndim < 3 or X.shape[0] == 1:
             X = X.repeat(self._batch_size, 1, 1)
 

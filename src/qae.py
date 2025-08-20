@@ -25,6 +25,7 @@ class QAE(HotTopic, nn.Module):
         mask = torch.randperm(n_samples)[:self.max_topics]
         self._codebook = nn.Parameter(self._encoder(X[mask]), requires_grad=True)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        self.train()
 
         return self
     
@@ -58,6 +59,7 @@ class QAE(HotTopic, nn.Module):
         return loss.item()
     
     def _predict(self, X):
+        self.eval()
         z = self._encoder(X)
         topics = self._quantize(z)
 

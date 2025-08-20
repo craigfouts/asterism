@@ -87,6 +87,7 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
         self._encoder = Encoder(in_channels, *self.channels, norm_layer=self.norm_layer, act_layer=self.act_layer, dropout=self.dropout)
         self._decoder = MLP(*self.channels[::-1], in_channels, norm_layer=self.norm_layer, act_layer=self.act_layer, dropout=self.dropout)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate)
+        self.train()
 
         return self
     
@@ -117,15 +118,15 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
     def forward(self, X):
         if hasattr(self, '_encoder'):
             z = self._encoder(X).detach()
-
-            return z
-        return X
-    
+        else:
+            z = torch.zeros((X.shape[0], self.channels[-1]))
+        
+        return z
+            
     @checkmethod
     @buildmethod
     def fit(self, X, n_steps=200, learning_rate=1e-2, batch_size=32, verbosity=1, display_rate=10):
         self.log_ = []
-        self.train()
 
         for self._step_n in tqdm(range(n_steps), self.desc) if verbosity == 1 else range(n_steps):
             self.log_.append(self._step())
@@ -133,11 +134,10 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
             if verbosity == 2 and self._step_n%display_rate == 0:
                 self._display()
 
-        self.eval()
-
         return self
     
     def transform(self, X):
+        self.eval()
         z = self(X)
 
         return z

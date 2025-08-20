@@ -17,6 +17,10 @@ from tqdm import tqdm
 def get_kwargs(*func, **kwargs):
     func_kwargs = []
 
+    # TODO
+    # if len(kwargs) == 0:
+    #     pass
+
     for f in func:
         keys = signature(f).parameters.keys()
         func_kwargs.append({key:kwargs[key] for key in keys if key in kwargs})

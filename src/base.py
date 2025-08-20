@@ -53,7 +53,7 @@ def checkmethod(method, ensure_min_features=1, accept_complex=False, accept_spar
         return method(self, X, *args, **kwargs)
     return wrap
 
-def buildmethod(method):
+def buildmethod(method):  # TODO: add 'build' parameter
     @wraps(method)
     def wrap(self, *args, **kwargs):
         if hasattr(self, '_build'):

@@ -1,5 +1,5 @@
 # Project Hot Topic
-Implementations of semantic segmentation algorithms and spatial topic models applied to point cloud data. Current methods include variations of latent Dirichlet allocation, various neural topic models, and a neural clustering process. Also a test bed for PriorLDA, a nonparametric topic model with encoded spatial priors.
+Implementations of semantic segmentation algorithms and spatial topic models applied to point cloud data. Current methods include variations of latent Dirichlet allocation, a vector quantized-autoencoder, and a neural clustering process. Also a test bed for PriorLDA, a nonparametric topic model with encoded spatial priors.
 
 ## Latent Dirichlet Allocation
 <img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/1b502547-de26-45b9-b302-83412ed029f9" />

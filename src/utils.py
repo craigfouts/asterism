@@ -12,14 +12,11 @@ from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from sklearn.metrics import confusion_matrix
+from torch.nn import functional as F
 from tqdm import tqdm
 
 def get_kwargs(*func, **kwargs):
     func_kwargs = []
-
-    # TODO
-    # if len(kwargs) == 0:
-    #     pass
 
     for f in func:
         keys = signature(f).parameters.keys()
@@ -147,7 +144,7 @@ def make_figure(n_sections=1, figsize=5, colormap=None, labels=None):
         return fig, axes, cmap
     return fig, axes
 
-def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None):
+def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None, return_fig=False):
     if not sectioned:
         data = np.hstack((np.zeros((data.shape[0], 1)), data))
 
@@ -167,4 +164,27 @@ def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, c
 
     if path is not None:
         fig.savefig(path, bbox_inches='tight', transparent=True)
+
+    if return_fig:
+        return fig, axes
+    else:
+        plt.show()
+
+@singledispatch
+def show_comparison(data, labels, topics, title1='dataset', title2='predictions', **kwargs):
+    offset = np.pad(np.ones((data.shape[0], 1)), ((0, 0), (0, data.shape[-1] - 1)))
+    X, y = np.concat((data, data + offset)), np.concat((labels, topics))
+    _, axes = show_dataset(X, y, return_fig=True, **kwargs)
+    axes[0].set_title(title1)
+    axes[1].set_title(title2)
+    plt.show()
+
+@show_comparison.register(torch.Tensor)
+def _(data, labels, topics, title1='dataset', title2='predictions', **kwargs):
+    offset = F.pad(torch.ones((data.shape[0], 1)), (0, data.shape[-1] - 1))
+    X, y = np.concat((data, data + offset)), np.concat((labels, topics))
+    _, axes = show_dataset(X, y, return_fig=True, **kwargs)
+    axes[0].set_title(title1)
+    axes[1].set_title(title2)
+    plt.show()
         

@@ -205,7 +205,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     >>> corpus = model.fit_transform(data, **kwargs)
     """
 
-    def __init__(self, n_topics=5, n_documents=None, n_words=40, document_scale=1., word_scale=1., topic_prior=1., document_prior=1.):
+    def __init__(self, n_topics=3, n_documents=None, n_words=32, document_scale=1., word_scale=1., topic_prior=1., document_prior=1.):
         super().__init__()
 
         self.n_topics = n_topics
@@ -233,14 +233,14 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
     def _shuffle(self, words):
         return shuffle(words, self.n_topics, self.documents.shape[0], self.n_words, return_counts=True)
     
-    def build(self, data, n_steps=200):
+    def build(self, data, n_steps=400):
         """Initializes model parameters and class attributes.
         
         Parameters
         ----------
         data : ndarray
             Section, coordinate, and feature values for each sample.
-        n_steps : int, default=200
+        n_steps : int, default=400
             Number of Gibbs sampling steps.
 
         Returns
@@ -430,7 +430,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return likelihood
     
-    def fit(self, data, n_steps=200, burn_in=150, description='SLDA', verbosity=1):
+    def fit(self, data, labels=None, n_steps=400, burn_in=300, description='SLDA', verbosity=1):
         """Computes topic and document assignments for each sample using
         collapsed Gibbs sampling.
 
@@ -438,9 +438,9 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         ----------
         data : ndarray
             Section, coordinate, and feature values for each sample.
-        n_steps : int, default=200
+        n_steps : int, default=400
             Number of Gibbs sampling steps.
-        burn_in : int, default=150
+        burn_in : int, default=300
             Number of sampling steps to discard.
         description : str, default='SLDA'
             Model description.
@@ -459,7 +459,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             likelihood = self.step(i)
             self.likelihood_log.append(likelihood)
 
-        self.labels_ = relabel(stats.mode(self.topics[burn_in:], 0).mode)
+        self.labels_ = relabel(stats.mode(self.topics[burn_in:], 0).mode, labels)
 
         return self
     

@@ -15,7 +15,7 @@ from base import HotTopic
 from utils import kmeans
 
 class GibbsLDA(HotTopic):
-    def __init__(self, n_topics=3, *, doc_size=10, vocab_size=10, dt_prior=.1, tw_prior=.1, desc='LDA', random_state=None):
+    def __init__(self, n_topics=3, *, doc_size=16, vocab_size=16, dt_prior=.1, tw_prior=.1, desc='LDA', random_state=None):
         super().__init__(desc, random_state)
 
         self.n_topics = n_topics
@@ -96,7 +96,7 @@ class GibbsLDA(HotTopic):
         return doc_topics
 
 class PyroLDA(HotTopic):
-    def __init__(self, n_topics=3, *, doc_size=10, vocab_size=10, dt_prior=.1, tw_prior=.1, optim='adam', desc='LDA'):
+    def __init__(self, n_topics=3, *, doc_size=16, vocab_size=16, dt_prior=.1, tw_prior=.1, optim='adam', desc='LDA'):
         pyro.clear_param_store()
         super().__init__(desc)
 
@@ -109,7 +109,7 @@ class PyroLDA(HotTopic):
 
         self._n_steps = 1000
 
-    def _build(self, X, learning_rate=1e-1, batch_size=100):
+    def _build(self, X, learning_rate=1e-1, batch_size=128):
         knn = torch.cdist(X, X).topk(self.doc_size, largest=False).indices
         self._docs = kmeans(X, self.vocab_size, verbosity=0)[knn].T
         self._optim = Adam({'lr': learning_rate})

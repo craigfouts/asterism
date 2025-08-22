@@ -4,27 +4,35 @@ Craig Fouts (craig.fouts@uu.igp.se)
 
 import torch
 from torch import nn
-from base import buildmethod, HotTopic
-from nets import OPTIM, MLP
+from torch.nn import functional as F
+from base import OPTIM, buildmethod, HotTopic, MLP
 from utils import shuffle
 
+def train_test_split(X, y):
+    n_datasets, n_samples = X[:, 0].unique().shape[0] - 1, (X[:, 0] == 0).sum()
+    split = X.shape[0] - X[X[:, 0] == n_datasets].shape[0]
+    X_train, y_train = X[:split].view(n_datasets, split//n_datasets, X.shape[-1])[..., 3:], y[:n_samples]
+    X_test = (X[split:] - F.pad(n_datasets*torch.ones((n_samples, 1)), (0, X.shape[-1] - 1)))[None]
+    y_test = y[split:]
+
+    return X_train, y_train, X_test, y_test
+
 class Encoder(nn.Module):
-    def __init__(self, in_channels, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), act_layer='prelu'):
+    def __init__(self, in_channels, *, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128)):
         super().__init__()
 
         self.in_channels = in_channels
         self.wc_channels = wc_channels
         self.bc_channels = bc_channels
         self.lp_channels = lp_channels
-        self.act_layer = act_layer
 
         if self.lp_channels[-1] != 1:
             self.lp_channels += (1,)
 
-        self._wc_model = MLP(self.in_channels, *self.wc_channels, act_layer=self.act_layer)
-        self._us_model = MLP(self.in_channels, *self.wc_channels, act_layer=self.act_layer)
-        self._bc_model = MLP(self.wc_channels[-1], *self.bc_channels, act_layer=self.act_layer)
-        self._lp_model = MLP(self.wc_channels[-1] + self.bc_channels[-1], *self.lp_channels, act_layer=self.act_layer, final_bias=False)
+        self._wc_model = MLP(self.in_channels, *self.wc_channels, act_layer='prelu')
+        self._us_model = MLP(self.in_channels, *self.wc_channels, act_layer='prelu')
+        self._bc_model = MLP(self.wc_channels[-1], *self.bc_channels, act_layer='prelu')
+        self._lp_model = MLP(self.wc_channels[-1] + self.bc_channels[-1], *self.lp_channels, act_layer='prelu', final_bias=False)
 
     def _build(self, X):
         self._batch_size = X.shape[0] if X.ndim > 2 else 1
@@ -90,20 +98,19 @@ class Encoder(nn.Module):
         return z
 
 class NCP(HotTopic, nn.Module):
-    def __init__(self, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), act_layer='prelu', optim='adam', desc='NCP'):
+    def __init__(self, *, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), optim='adam', desc='NCP'):
         super().__init__(desc, check=False)
 
         self.wc_channels = wc_channels
         self.bc_channels = bc_channels
         self.lp_channels = lp_channels
-        self.act_layer = act_layer
         self.optim = optim
 
         self._n_steps = 200
 
     def _build(self, X, learning_rate=1e-4, weight_decay=1e-2, batch_size=16):
         self._batch_size = X.shape[0] if X.ndim > 2 and X.shape[0] > 1 else batch_size
-        self._encoder = Encoder(X.shape[-1], self.wc_channels, self.bc_channels, self.lp_channels, self.act_layer)
+        self._encoder = Encoder(X.shape[-1], wc_channels=self.wc_channels, bc_channels=self.bc_channels, lp_channels=self.lp_channels)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
         self.train()
 
@@ -123,17 +130,13 @@ class NCP(HotTopic, nn.Module):
 
         return nll
     
-    def _predict(self, X):
-        self.eval()
+    def _predict(self, X, eval=True):
+        if eval:
+            self.eval()
 
         if X.ndim < 3 or X.shape[0] == 1:
             X = X.repeat(self._batch_size, 1, 1)
 
         topics = self._encoder(X)
-
-        return topics
-    
-    def forward(self, X):
-        topics = self._predict(X)
 
         return topics

@@ -6,23 +6,28 @@ from torch import nn
 from torch.utils.data import DataLoader
 from base import OPTIM, HotTopic, Encoder, MLP
 
-class GSM(HotTopic, nn.Module):
-    def __init__(self, max_topics=100, *, channels=(64, 32), kld_scale=.1, optim='adam', desc='GSM', random_state=None):
+class NTM(HotTopic, nn.Module):
+    def __init__(self, max_topics=100, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', random_state=None):
         super().__init__(desc, random_state)
 
         self.max_topics = max_topics
         self.channels = channels
         self.kld_scale = kld_scale
+        self.mode = mode
         self.optim = optim
 
-        self._n_steps = 200
+        if self.mode not in ('softmax', 'dirichlet'):
+            raise ValueError(f'Mode "{self.mode}" not supported.')
+
+        self._n_steps = 1000
     
-    def _build(self, X, learning_rate=1e-2, batch_size=32, shuffle=True):
+    def _build(self, X, learning_rate=1e-2, batch_size=128, shuffle=True):
         in_channels, self._batch_size = X.shape[-1], batch_size
+        out_channels = self.max_topics - (self.mode == 'dirichlet')
         self._loader = DataLoader(X, self._batch_size, shuffle)
         self._encoder = Encoder(in_channels, *self.channels)
-        self._g_model = MLP(self.channels[-1], self.max_topics, final_act='softmax', dim=-1)
-        self._decoder = MLP(self.max_topics, in_channels)
+        self._g_model = MLP(self.channels[-1], out_channels, final_act=self.mode, dim=-1)
+        self._decoder = MLP(out_channels, in_channels)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate)
         self.train()
 

@@ -8,7 +8,7 @@ from base import HotTopic
 from base import OPTIM, Encoder, MLP
         
 class VQAE(HotTopic, nn.Module):
-    def __init__(self, max_topics=100, *, channels=(64, 32), optim='adam', desc='VQAE', random_state=None):
+    def __init__(self, max_topics=100, *, channels=(128, 32), optim='adam', desc='VQAE', random_state=None):
         super().__init__(desc, random_state)
 
         self.max_topics = max_topics

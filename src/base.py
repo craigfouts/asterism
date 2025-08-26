@@ -6,16 +6,27 @@ import numpy as np
 import torch
 from abc import ABCMeta, abstractmethod
 from functools import singledispatch, wraps
-from inspect import getcallargs, signature
+from inspect import getcallargs
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_array, check_random_state
 from torch import nn, optim
+from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from utils import get_kwargs, relabel
 
+class Dirichlet(nn.Module):
+    def forward(self, x, sigmoid=True):
+        if sigmoid:
+            x = F.sigmoid(x[:, :-1])
+
+        products = F.pad((1 - x).cumprod(-1), (1, 0), value=1)
+        weights = F.pad(x, (0, 1), value=1)*products
+
+        return weights
+
 NORM = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}
-ACT = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax}
+ACT = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax, 'dirichlet': Dirichlet}
 OPTIM = {'adam': optim.Adam, 'sgd': optim.SGD}
 
 @singledispatch

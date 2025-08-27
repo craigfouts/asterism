@@ -1,20 +1,23 @@
 # Project Hot Topic
 Implementations of semantic segmentation algorithms and spatial topic models applied to point cloud data. Current methods include variations of latent Dirichlet allocation, a vector quantized-autoencoder, and a neural clustering process. Also a test bed for PriorLDA, a nonparametric topic model with encoded spatial priors.
 
-## Latent Dirichlet Allocation
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/5960c1b2-adc9-4775-89d8-aadab40201be" />
+## Latent Dirichlet Allocation using Collapsed Gibbs Sampling
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/63f96c8f-eaf0-4774-9e70-e0c6b1128965" />
 
-## Spatial Latent Dirichlet Allocation
-<img width="794" height="395" alt="image" src="https://github.com/user-attachments/assets/007b7f1e-13c4-4127-a28f-85f2d7a6dfe5" />
+## Latent Dirichlet Allocation using Stochastic Variational Inference
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/03f9f2ad-217e-4b43-8714-5d48fc2fc15a" />
+
+## Spatial Latent Dirichlet Allocation using Collapsed Gibbs Sampling
+<img width="794" height="393" alt="image" src="https://github.com/user-attachments/assets/37d696f4-8d7b-42bc-b7ff-e3416a070348" />
 
 ## Gaussian Softmax Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/3a12b184-6ab3-4126-88d0-4c545a924509" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/cffc80ff-e55a-4b33-8998-5bbee9d897cc" />
 
 ## Gaussian Stick-Breaking Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/3f32c8cf-4bd8-4328-9bbd-912b4a5aa740" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/4c8a4107-e19a-4dc1-a952-dbeefe6a9f63" />
 
 ## Vector Quantized-Autoencoder
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/a63fab58-e608-4da3-b74c-7f3595f6d7de" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/69f28e3a-2f16-47a1-bb63-661de220a0c1" />
 
 ## Neural Clustering Process
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/67dafb64-23f0-4451-a49d-4b53641583ca" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/98b9af97-7e73-4453-b776-2ec1748c6fb8" />

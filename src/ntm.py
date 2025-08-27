@@ -27,7 +27,7 @@ class NTM(HotTopic, nn.Module):
         self._loader = DataLoader(X, self._batch_size, shuffle)
         self._encoder = Encoder(in_channels, *self.channels)
         self._g_model = MLP(self.channels[-1], out_channels, final_act=self.mode, dim=-1)
-        self._decoder = MLP(out_channels, in_channels)
+        self._decoder = MLP(self.max_topics, in_channels, final_bias=False)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate)
         self.train()
 

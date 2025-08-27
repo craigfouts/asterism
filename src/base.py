@@ -18,7 +18,7 @@ from utils import get_kwargs, relabel
 class Dirichlet(nn.Module):
     def forward(self, x, sigmoid=True):
         if sigmoid:
-            x = F.sigmoid(x[:, :-1])
+            x = F.sigmoid(x)
 
         products = F.pad((1 - x).cumprod(-1), (1, 0), value=1)
         weights = F.pad(x, (0, 1), value=1)*products

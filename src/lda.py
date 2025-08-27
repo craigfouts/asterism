@@ -15,7 +15,7 @@ from base import HotTopic
 from utils import kmeans
 
 class GibbsLDA(HotTopic):
-    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=.1, tw_prior=.1, desc='LDA', random_state=None):
+    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', random_state=None):
         super().__init__(desc, random_state)
 
         self.n_topics = n_topics
@@ -96,7 +96,7 @@ class GibbsLDA(HotTopic):
         return doc_topics
 
 class PyroLDA(HotTopic):
-    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=.1, tw_prior=.1, optim='adam', desc='LDA'):
+    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA'):
         pyro.clear_param_store()
         super().__init__(desc)
 

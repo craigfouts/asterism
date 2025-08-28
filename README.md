@@ -1,5 +1,5 @@
-Project Hot Topic
-=================
+Hot Topic - Experiments with Point Cloud Clustering
+===================================================
 Implementations of semantic segmentation algorithms and spatial topic models applied to point cloud data. Current methods include variations of latent Dirichlet allocation, a vector quantized-autoencoder, and a neural clustering process. Also a test bed for PriorLDA, a nonparametric topic model with encoded spatial priors.
 
 ## Latent Dirichlet Allocation using Collapsed Gibbs Sampling

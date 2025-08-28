@@ -1,10 +1,13 @@
-"""
-Craig Fouts (craig.fouts@uu.igp.se)
-"""
+'''
+Author(s): Craig Fouts
+Correspondence: c.fouts25@imperial.ac.uk
+License: Apache 2.0 license
+'''
 
 from torch import nn
 from torch.utils.data import DataLoader
-from base import OPTIM, HotTopic, Encoder, MLP
+from ...base import HotTopic
+from ...utils.nets import OPTIM, Encoder, MLP
 
 class NTM(HotTopic, nn.Module):
     def __init__(self, max_topics=100, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', random_state=None):

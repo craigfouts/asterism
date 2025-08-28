@@ -1,26 +1,28 @@
-"""
-Craig Fouts (craig.fouts@uu.igp.se)
-"""
+'''
+Author(s): Craig Fouts
+Correspondence: c.fouts25@imperial.ac.uk
+License: Apache 2.0 license
+'''
 
 import numpy as np
 from sklearn.datasets import make_classification
 import torch
-from utils import to_list
+from ._utils import to_list
 
-CHECKERS = np.array([[0, 1, 0],
+_CHECKERS = np.array([[0, 1, 0],
                      [1, 0, 1],
                      [0, 1, 0]], dtype=np.int32)
 
-POLYGONS = np.array([[0, 1, 0, 2, 2, 2],
+_POLYGONS = np.array([[0, 1, 0, 2, 2, 2],
                      [1, 1, 1, 2, 0, 2],
                      [0, 1, 0, 2, 2, 2],
                      [3, 0, 0, 4, 4, 4],
                      [3, 3, 0, 0, 4, 0],
                      [3, 3, 3, 0, 4, 0]], dtype=np.int32)
 
-TEMPLATES = {'checkers': CHECKERS, 'polygons': POLYGONS}
+TEMPLATES = {'checkers': _CHECKERS, 'polygons': _POLYGONS}
 
-def make_blocks(template='polygons', block_size=5):
+def _make_blocks(template='polygons', block_size=5):
     n_sections = len(template) if isinstance(template, (tuple, list)) else 1
     template, block_size = to_list(n_sections, template, block_size)
     template = [TEMPLATES[t] if isinstance(t, str) else t for t in template]
@@ -36,8 +38,8 @@ def make_blocks(template='polygons', block_size=5):
 
     return locs, labels
 
-def make_data(template='polygons', block_size=10, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1.):
-    locs, labels = make_blocks(template, block_size)
+def _make_data(template='polygons', block_size=10, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1.):
+    locs, labels = _make_blocks(template, block_size)
     n_samples = locs.shape[0]
     _, bins = np.unique(labels, return_counts=True)
     n_topics, weights = bins.shape[0], bins/n_samples
@@ -48,7 +50,7 @@ def make_data(template='polygons', block_size=10, n_features=100, n_equivocal=0,
     return data, labels
 
 def make_dataset(template='polygons', block_size=10, n_features=100, n_equivocal=0, n_redundant=0, n_repeated=0, topic_sep=10., scale=1., wiggle=0., mix=0., return_tensor=False):
-    data, labels = make_data(template, block_size, n_features, n_equivocal, n_redundant, n_repeated, topic_sep, scale)
+    data, labels = _make_data(template, block_size, n_features, n_equivocal, n_redundant, n_repeated, topic_sep, scale)
     data[:, 1:3] = np.random.normal(data[:, 1:3], wiggle)
     sections = np.unique(data[:, 0])
 

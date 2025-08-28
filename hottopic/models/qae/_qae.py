@@ -1,11 +1,13 @@
-"""
-Craig Fouts (craig.fouts@uu.igp.se)
-"""
+'''
+Author(s): Craig Fouts
+Correspondence: c.fouts25@imperial.ac.uk
+License: Apache 2.0 license
+'''
 
 import torch
 from torch import nn
-from base import HotTopic
-from base import OPTIM, Encoder, MLP
+from ...base import HotTopic
+from ...utils.nets import OPTIM, Encoder, MLP
         
 class VQAE(HotTopic, nn.Module):
     def __init__(self, max_topics=100, *, channels=(128, 32), optim='adam', desc='VQAE', random_state=None):

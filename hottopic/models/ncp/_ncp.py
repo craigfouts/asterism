@@ -1,14 +1,17 @@
-"""
-Craig Fouts (craig.fouts@uu.igp.se)
-"""
+'''
+Author(s): Craig Fouts
+Correspondence: c.fouts25@imperial.ac.uk
+License: Apache 2.0 license
+'''
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-from base import OPTIM, buildmethod, HotTopic, MLP
-from utils import shuffle
+from ...base import buildmethod, HotTopic
+from ...utils import shuffle
+from ...utils.nets import OPTIM, MLP
 
-def train_test_split(X, y):
+def split(X, y):
     n_datasets, n_samples = X[:, 0].unique().shape[0] - 1, (X[:, 0] == 0).sum()
     split = X.shape[0] - X[X[:, 0] == n_datasets].shape[0]
     X_train, y_train = X[:split].view(n_datasets, split//n_datasets, X.shape[-1])[..., 3:], y[:n_samples]

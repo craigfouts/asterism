@@ -1,6 +1,8 @@
-"""
-Craig Fouts (craig.fouts@uu.igp.se)
-"""
+'''
+Author(s): Craig Fouts
+Correspondence: c.fouts25@imperial.ac.uk
+License: Apache 2.0 license
+'''
 
 import numpy as np
 import pyro
@@ -11,8 +13,8 @@ from pyro.infer import SVI, TraceEnum_ELBO
 from pyro.optim import Adam
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
-from base import HotTopic
-from utils import kmeans
+from ...base import HotTopic
+from ...utils import kmeans
 
 class GibbsLDA(HotTopic):
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', random_state=None):

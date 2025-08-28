@@ -1,6 +1,8 @@
-"""
-Craig Fouts (craig.fouts@uu.igp.se)
-"""
+'''
+Author(s): Craig Fouts
+Correspondence: c.fouts25@imperial.ac.uk
+License: Apache 2.0 license
+'''
 
 import numpy as np
 from scipy import stats
@@ -8,7 +10,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
 from tqdm import tqdm
-from utils import relabel
+from ...utils import relabel
 
 def distribute(data, n_documents=None, scale=1., n_neighbors=4):
     """Uniformly distributes document locations proximally to sample locations

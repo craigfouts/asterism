@@ -6,10 +6,10 @@ License: Apache 2.0 license
 
 from torch import nn
 from torch.utils.data import DataLoader
-from ...base import HotTopic
+from ...base import Keynote
 from ...utils.nets import OPTIM, Encoder, MLP
 
-class NTM(HotTopic, nn.Module):
+class NTM(Keynote, nn.Module):
     def __init__(self, max_topics=100, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', random_state=None):
         super().__init__(desc, random_state)
 

@@ -13,10 +13,10 @@ from pyro.infer import SVI, TraceEnum_ELBO
 from pyro.optim import Adam
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
-from ...base import HotTopic
+from ...base import Keynote
 from ...utils import kmeans
 
-class GibbsLDA(HotTopic):
+class GibbsLDA(Keynote):
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', random_state=None):
         super().__init__(desc, random_state)
 
@@ -97,7 +97,7 @@ class GibbsLDA(HotTopic):
         
         return doc_topics
 
-class PyroLDA(HotTopic):
+class PyroLDA(Keynote):
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA'):
         pyro.clear_param_store()
         super().__init__(desc)

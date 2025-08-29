@@ -12,7 +12,7 @@ from inspect import getcallargs
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_array, check_random_state
 from tqdm import tqdm
-from hottopic.utils import get_kwargs, relabel
+from ..utils import get_kwargs, relabel
 
 @singledispatch
 def _check(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):

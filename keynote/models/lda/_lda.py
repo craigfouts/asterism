@@ -17,8 +17,8 @@ from ...base import Keynote
 from ...utils import kmeans
 
 class GibbsLDA(Keynote):
-    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', random_state=None):
-        super().__init__(desc, random_state)
+    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
+        super().__init__(desc, seed)
 
         self.n_topics = n_topics
         self.doc_size = doc_size

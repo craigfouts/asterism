@@ -101,8 +101,8 @@ class Encoder(nn.Module):
         return z
 
 class NCP(Keynote, nn.Module):
-    def __init__(self, *, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), optim='adam', desc='NCP'):
-        super().__init__(desc, check=False)
+    def __init__(self, *, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), optim='adam', desc='NCP', seed=None):
+        super().__init__(desc, seed, check=False)
 
         self.wc_channels = wc_channels
         self.bc_channels = bc_channels

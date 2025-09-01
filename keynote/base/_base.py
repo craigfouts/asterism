@@ -54,7 +54,19 @@ def checkmethod(method, ensure_min_features=1, accept_complex=False, accept_spar
         return method(self, X, *args, **kwargs)
     return wrapper
 
-def buildmethod(build):
+@singledispatch
+def buildmethod(method):
+    def wrap(self, *args, **kwargs):
+        if hasattr(self, '_build'):
+            method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
+            build_kwargs = get_kwargs(self._build, **method_kwargs)
+            self._build(**build_kwargs)
+
+        return method(self, *args, **kwargs)
+    return wrap
+
+@buildmethod.register(str)
+def _(build):
     def decorator(method):
         @wraps(method)
         def wrapper(self, *args, **kwargs):
@@ -109,7 +121,7 @@ class Keynote(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         print(msg)
 
     @checkmethod
-    @buildmethod('_build')
+    @buildmethod
     def fit(self, X, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)

@@ -7,7 +7,7 @@ License: Apache 2.0 license
 import torch
 from torch import nn
 from torch.nn import functional as F
-from ...base import buildmethod, Keynote
+from ...base import buildmethod, Asterism
 from ...utils import shuffle
 from ...utils.nets import OPTIM, MLP
 
@@ -100,7 +100,7 @@ class Encoder(nn.Module):
 
         return z
 
-class NCP(Keynote, nn.Module):
+class NCP(Asterism, nn.Module):
     def __init__(self, *, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128), optim='adam', desc='NCP', seed=None):
         super().__init__(desc, seed, check=False)
 

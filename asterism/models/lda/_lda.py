@@ -13,10 +13,10 @@ from pyro.infer import SVI, TraceEnum_ELBO
 from pyro.optim import Adam
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
-from ...base import Keynote
+from ...base import Asterism
 from ...utils import kmeans
 
-class GibbsLDA(Keynote):
+class GibbsLDA(Asterism):
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
         super().__init__(desc, seed)
 
@@ -97,7 +97,7 @@ class GibbsLDA(Keynote):
         
         return doc_topics
 
-class PyroLDA(Keynote):
+class PyroLDA(Asterism):
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA'):
         pyro.clear_param_store()
         super().__init__(desc)

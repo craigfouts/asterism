@@ -6,10 +6,10 @@ License: Apache 2.0 license
 
 import torch
 from torch import nn
-from ...base import Keynote
+from ...base import Asterism
 from ...utils.nets import OPTIM, Encoder, MLP
         
-class VQAE(Keynote, nn.Module):
+class VQAE(Asterism, nn.Module):
     def __init__(self, max_topics=100, *, channels=(128, 32), optim='adam', desc='VQAE', seed=None):
         super().__init__(desc, seed)
 

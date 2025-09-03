@@ -6,10 +6,10 @@ License: Apache 2.0 license
 
 from torch import nn
 from torch.utils.data import DataLoader
-from ...base import Keynote
+from ...base import Asterism
 from ...utils.nets import OPTIM, Encoder, MLP
 
-class NTM(Keynote, nn.Module):
+class NTM(Asterism, nn.Module):
     def __init__(self, max_topics=100, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', seed=None):
         super().__init__(desc, seed)
 

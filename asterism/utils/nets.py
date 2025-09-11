@@ -18,18 +18,21 @@ ACT = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tan
 OPTIM = {'adam': optim.Adam, 'sgd': optim.SGD}
 
 class MLP(nn.Sequential):
-    def __init__(self, *channels, bias=True, norm_layer=None, act_layer=None, dropout=0., final_bias=True, final_norm=None, final_act=None, final_dropout=0., **kwargs):
+    def __init__(self, *channels, bias=True, norm_layer=None, act_layer=None, dropout=0., final_bias=True, final_norm=None, final_act=None, final_drop=0., **kwargs):
         modules = []
 
         for i in range(1, len(channels) - 1):
-            modules.append(self.layer(channels[i - 1], channels[i], bias, norm_layer, act_layer, dropout, **kwargs))
+            modules.append(self._layer(channels[i - 1], channels[i], bias, norm_layer, act_layer, dropout, **kwargs))
 
-        modules.append(self.layer(channels[-2%len(channels)], channels[-1], final_bias, final_norm, final_act, final_dropout, **kwargs))
+        if len(modules) == 0:
+            final_bias, final_norm, final_act, final_drop = bias, norm_layer, act_layer, dropout
+
+        modules.append(self._layer(channels[-2%len(channels)], channels[-1], final_bias, final_norm, final_act, final_drop, **kwargs))
 
         super().__init__(*modules)
 
     @staticmethod
-    def layer(in_channels, out_channels=None, bias=True, norm_layer=None, act_layer=None, dropout=0., **kwargs):
+    def _layer(in_channels, out_channels=None, bias=True, norm_layer=None, act_layer=None, dropout=0., **kwargs):
         if out_channels is None:
             out_channels = in_channels
 
@@ -48,6 +51,21 @@ class MLP(nn.Sequential):
             module.append(nn.Dropout(dropout))
 
         return module
+    
+class RNN(MLP):
+    def __init__(self, channels, bias=True, act_layer='tanh'):
+        super().__init__(channels, bias=bias, act_layer=act_layer)
+
+        self.x_ = torch.rand(1, channels)
+
+    def forward(self, x=None, n_layers=2):
+        if x is None:
+            x = self.x_
+
+        for i in range(1, n_layers):
+            x = torch.cat([x, super().forward(x[i - 1:i])])
+
+        return x
     
 class Encoder(nn.Module):
     def __init__(self, *channels, norm_layer='batch', act_layer='relu', dropout=.2, **kwargs):

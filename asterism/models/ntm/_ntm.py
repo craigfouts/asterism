@@ -19,32 +19,36 @@ class NTM(Asterism, nn.Module):
         self.mode = mode
         self.optim = optim
 
-        if self.mode not in ('softmax', 'dirichlet'):
-            raise ValueError(f'Mode "{self.mode}" not supported.')
+        if mode not in ('softmax', 'dirichlet'):
+            raise ValueError(f'Mode `{mode}` not supported.')
 
         self._n_steps = 1000
     
     def _build(self, X, learning_rate=1e-2, batch_size=128, shuffle=True):
-        in_channels, self._batch_size = X.shape[-1], batch_size
         out_channels = self.max_topics - (self.mode == 'dirichlet')
-        self._loader = DataLoader(X, self._batch_size, shuffle)
-        self._encoder = Encoder(in_channels, *self.channels)
+        self._loader = DataLoader(X, batch_size, shuffle)
+        self._encoder = Encoder(X.shape[1], *self.channels)
         self._g_model = MLP(self.channels[-1], out_channels, final_act=self.mode, dim=-1)
-        self._decoder = MLP(self.max_topics, in_channels, final_bias=False)
+        self._decoder = MLP(self.max_topics, X.shape[1], final_bias=False)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate)
         self.train()
 
         return self
     
+    def _evaluate(self, X):
+        z, kld = self._encoder(X, return_kld=True)
+        X_ = self._decoder(self._g_model(z))
+        loss = (X_ - X).square().sum()/X.shape[0] + self.kld_scale*kld
+
+        return loss
+    
     def _step(self):
         loss = 0.
 
         for x in self._loader:
-            z, kl = self._encoder(x, return_kld=True)
-            x_ = self._decoder(self._g_model(z))
-            x_loss = (x_ - x).square().sum().sqrt() + self.kld_scale*kl
+            x_loss = self._evaluate(x)
             x_loss.backward()
-            loss += x_loss.item()/self._batch_size
+            loss += x_loss.item()
 
         self._optim.step()
         self._optim.zero_grad()
@@ -56,10 +60,5 @@ class NTM(Asterism, nn.Module):
             self.eval()
 
         topics = (X@self._decoder[0][0].weight.detach()).argmax(-1)
-
-        return topics
-    
-    def forward(self, X, eval=True):
-        topics = self._predict(X, eval)
 
         return topics

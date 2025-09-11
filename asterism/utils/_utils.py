@@ -117,4 +117,18 @@ def _(data, k=3, n_steps=10, n_perms=100, verbosity=1, desc='KMeans'):
     labels = torch.mode(labels, 0).values
 
     return labels
+
+@singledispatch
+def log_norm(x):
+    m, _ = x.max(1, keepdims=True)
+    x = x - m - (x - m).exp().sum(1, keepdims=True).log()
+
+    return x
+
+@log_norm.register(torch.Tensor)
+def _(x):
+    m, _ = x.max(1, keepdim=True)
+    x = x - m - (x - m).exp().sum(1, keepdim=True).log()
+
+    return x
         

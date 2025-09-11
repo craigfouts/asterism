@@ -20,11 +20,10 @@ class VQAE(Asterism, nn.Module):
         self._n_steps = 100
         
     def _build(self, X, learning_rate=1e-2, weight_decay=1e-2):
-        n_samples, in_channels = X.shape
+        mask = torch.randperm(X.shape[0])[:self.max_topics]
         out_channels = (self.channels,) if isinstance(self.channels, int) else self.channels
-        self._encoder = MLP(in_channels, *out_channels, norm_layer='batch', act_layer='relu')
-        self._decoder = MLP(*out_channels[::-1], in_channels, norm_layer='batch', act_layer='relu')
-        mask = torch.randperm(n_samples)[:self.max_topics]
+        self._encoder = MLP(X.shape[1], *out_channels, norm_layer='batch', act_layer='relu')
+        self._decoder = MLP(*out_channels[::-1], X.shape[1], norm_layer='batch', act_layer='relu')
         self._codebook = nn.Parameter(self._encoder(X[mask]), requires_grad=True)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
         self.train()
@@ -43,7 +42,8 @@ class VQAE(Asterism, nn.Module):
             return topics, loss
         return topics
     
-    def _evaluate(self, X, z):
+    def _evaluate(self, X):
+        z = self._encoder(X)
         topics, z_loss = self._quantize(z, z_grad=True, return_loss=True)
         _, c_loss = self._quantize(z, c_grad=True, return_loss=True)
         X_ = self._decoder(self._codebook[topics])
@@ -52,24 +52,24 @@ class VQAE(Asterism, nn.Module):
         return loss
     
     def _step(self, X):
-        z = self._encoder(X)
-        loss = self._evaluate(X, z)
+        loss = self._evaluate(X)  # TODO: add DataLoader
         loss.backward()
         self._optim.step()
         self._optim.zero_grad()
 
         return loss.item()
     
-    def _predict(self, X):
-        self.eval()
-        z = self._encoder(X)
-        topics = self._quantize(z)
+    def _predict(self, X, eval=True):
+        if eval:
+            self.eval()
+
+        topics = self._quantize(self._encoder(X))
 
         return topics
     
 # TODO
-# class QVAE(HotTopic, nn.Module):
-#     def __init__(self, max_topics=100, *, channels=(64, 32), kld_scale=.1, optim='adam', desc='QVAE', random_state=None):
+# class VQVAE(HotTopic, nn.Module):
+#     def __init__(self, max_topics=100, *, channels=(64, 32), kld_scale=.1, optim='adam', desc='VQVAE', random_state=None):
 #         super().__init__(desc, random_state)
 
 #         self.max_topics = max_topics

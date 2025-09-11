@@ -31,12 +31,11 @@ class GibbsLDA(Asterism):
     def _build(self, X):
         knn = cdist(X, X).argsort(-1)[:, :self.doc_size]
         self._docs = kmeans(X, self.vocab_size, verbosity=0)[knn]
-        self._words = self._docs.flatten()
-        topics = self.random_state_.choice(self.n_topics, self._words.shape[0])
+        self._words, topic_range = self._docs.flatten(), np.arange(self.n_topics)[None].T
         self._topics = np.zeros((self._n_steps, self._words.shape[0]), dtype=np.int32)
-        self._topics[-1:] = topics
-        self._dt_post = np.eye(self.n_topics)[topics.reshape(*self._docs.shape)].sum(1)
-        self._tw_post = (topics == np.arange(self.n_topics)[None].T)@np.eye(self.vocab_size)[self._words]
+        self._topics[-1:] = self.seed_.choice(self.n_topics, self._words.shape[0])
+        self._dt_post = np.eye(self.n_topics)[self._topics[-1].reshape(*self._docs.shape)].sum(1)
+        self._tw_post = (self._topics[-1] == topic_range)@np.eye(self.vocab_size)[self._words]
 
         return self
     
@@ -70,17 +69,17 @@ class GibbsLDA(Asterism):
         tw_probs /= (self._tw_post + self.tw_prior).sum(-1)
         probs = dt_probs*tw_probs
         probs /= probs.sum()
-        topic = self.random_state_.choice(self.n_topics, p=probs)
+        topic = self.seed_.choice(self.n_topics, p=probs)
 
         if return_probs:
             return topic, probs
         return topic
     
     def _step(self):
-        idx = self.random_state_.permutation(self._words.shape[0])
+        idx = self.seed_.permutation(self._words.shape[0])
         likelihood = 0
 
-        for i in idx:
+        for i in idx:  # TODO: add DataLoader
             doc, topic, word = self._query(i)
             self._decrement(doc, topic, word)
             new_topic, probs = self._sample(doc, word, return_probs=True)
@@ -114,37 +113,36 @@ class PyroLDA(Asterism):
     def _build(self, X, learning_rate=1e-1, batch_size=128):
         knn = torch.cdist(X, X).topk(self.doc_size, largest=False).indices
         self._docs = kmeans(X, self.vocab_size, verbosity=0)[knn].T
-        self._optim = Adam({'lr': learning_rate})
+        self._optim, self._batch_size = Adam({'lr': learning_rate}), batch_size
         self._elbo = TraceEnum_ELBO(max_plate_nesting=2)
         self._svi = SVI(self._model, self._guide, self._optim, self._elbo)
-        self._batch_size = batch_size
 
         return self
     
     def _model(self, X):
         with pyro.plate('topics', self.n_topics):
-            tw_dists = pyro.sample('tw_dists', Dirichlet(self.tw_prior*torch.ones(self.vocab_size)))
+            tw_probs = pyro.sample('tw_probs', Dirichlet(self.tw_prior*torch.ones(self.vocab_size)))
 
         with pyro.plate('docs', X.shape[1], self._batch_size) as mask:
-            dt_dists = pyro.sample('dt_dists', Dirichlet(self.dt_prior*torch.ones(self.n_topics)))
+            dt_probs = pyro.sample('dt_probs', Dirichlet(self.dt_prior*torch.ones(self.n_topics)))
 
             with pyro.plate('words', X.shape[0]):
-                labels = pyro.sample('labels', Categorical(dt_dists), infer={'enumerate': 'parallel'})
-                pyro.sample('values', Categorical(tw_dists[labels]), obs=X[:, mask])
+                labels = pyro.sample('labels', Categorical(dt_probs), infer={'enumerate': 'parallel'})
+                pyro.sample('values', Categorical(tw_probs[labels]), obs=X[:, mask])
 
         return self
     
     def _guide(self, X):
-        dt_lambda = lambda: torch.ones((X.shape[1], self.n_topics))
-        tw_lambda = lambda: torch.ones((self.n_topics, self.vocab_size))
-        self._dt_post = pyro.param('dt_post', dt_lambda, constraint=constraints.greater_than(.5))
-        self._tw_post = pyro.param('tw_post', tw_lambda, constraint=constraints.greater_than(.5))
+        dt_prior = lambda: torch.ones((X.shape[1], self.n_topics))
+        tw_prior = lambda: torch.ones((self.n_topics, self.vocab_size))
+        self._dt_post = pyro.param('dt_post', dt_prior, constraint=constraints.greater_than(.5))
+        self._tw_post = pyro.param('tw_post', tw_prior, constraint=constraints.greater_than(.5))
 
         with pyro.plate('topics', self.n_topics):
-            pyro.sample('tw_dists', Dirichlet(self._tw_post))
+            pyro.sample('tw_probs', Dirichlet(self._tw_post))
 
         with pyro.plate('docs', X.shape[1], self._batch_size) as mask:
-            pyro.sample('dt_dists', Dirichlet(self._dt_post[mask]))
+            pyro.sample('dt_probs', Dirichlet(self._dt_post[mask]))
 
         return self
     
@@ -154,6 +152,6 @@ class PyroLDA(Asterism):
         return loss
     
     def _predict(self):
-        labels = pyro.sample('dt_dists', Dirichlet(self._dt_post)).argmax(-1).detach()
+        labels = pyro.sample('dt_probs', Dirichlet(self._dt_post)).argmax(-1).detach()
 
         return labels

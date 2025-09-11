@@ -139,8 +139,3 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         self.labels_ = relabel(self._predict(**predict_kwargs), y)
 
         return self
-    
-    def fit_predict(self, X, y=None, **kwargs):
-        self.fit(X, y, **kwargs)
-        
-        return self.labels_

@@ -24,9 +24,6 @@ class MLP(nn.Sequential):
         for i in range(1, len(channels) - 1):
             modules.append(self._layer(channels[i - 1], channels[i], bias, norm_layer, act_layer, dropout, **kwargs))
 
-        if len(modules) == 0:
-            final_bias, final_norm, final_act, final_drop = bias, norm_layer, act_layer, dropout
-
         modules.append(self._layer(channels[-2%len(channels)], channels[-1], final_bias, final_norm, final_act, final_drop, **kwargs))
 
         super().__init__(*modules)
@@ -54,7 +51,7 @@ class MLP(nn.Sequential):
     
 class RNN(MLP):
     def __init__(self, channels, bias=True, act_layer='tanh'):
-        super().__init__(channels, bias=bias, act_layer=act_layer)
+        super().__init__(channels, final_bias=bias, final_act=act_layer)
 
         self.x_ = torch.rand(1, channels)
 
@@ -76,13 +73,13 @@ class Encoder(nn.Module):
         self.act_layer = act_layer
         self.dropout = dropout
 
-        self._e_model = MLP(*self.channels[:-1], act_layer=self.act_layer, final_act=self.act_layer, final_dropout=self.dropout, **kwargs)
-        self._m_model = MLP(*self.channels[-2:], final_norm=norm_layer, **kwargs)
-        self._s_model = MLP(*self.channels[-2:], final_norm=norm_layer, **kwargs)
+        self._e_mlp = MLP(*self.channels[:-1], act_layer=self.act_layer, final_act=self.act_layer, final_dropout=self.dropout, **kwargs)
+        self._m_mlp = MLP(*self.channels[-2:], final_norm=norm_layer, **kwargs)
+        self._s_mlp = MLP(*self.channels[-2:], final_norm=norm_layer, **kwargs)
 
     def forward(self, X, return_kld=False):
-        e = self._e_model(X)
-        m, s_log = self._m_model(e), self._s_model(e)
+        e = self._e_mlp(X)
+        m, s_log = self._m_mlp(e), self._s_mlp(e)
         s_exp = (.5*s_log).exp()
         z = m + s_exp*torch.randn_like(m)
 

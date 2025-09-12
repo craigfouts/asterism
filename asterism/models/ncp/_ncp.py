@@ -118,7 +118,7 @@ class NCP(Asterism, nn.Module):
 
         return self
     
-    def _step(self, X, y, n_perms=6, n_samples=64):  # TODO: add DataLoader
+    def _step(self, X, y, n_perms=6, n_samples=64):
         mask, nll = torch.randperm(X.shape[0])[:self._batch_size], 0
 
         for _ in range(n_perms):

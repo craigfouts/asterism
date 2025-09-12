@@ -79,7 +79,7 @@ class GibbsLDA(Asterism):
         idx = self.seed_.permutation(self._words.shape[0])
         likelihood = 0
 
-        for i in idx:  # TODO: add DataLoader
+        for i in idx:
             doc, topic, word = self._query(i)
             self._decrement(doc, topic, word)
             new_topic, probs = self._sample(doc, word, return_probs=True)

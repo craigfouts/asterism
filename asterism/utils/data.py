@@ -54,10 +54,10 @@ def make_dataset(template='polygons', block_size=10, n_features=100, n_equivocal
     locs[:, 1:], sections = np.random.normal(locs[:, 1:], wiggle), np.unique(locs[:, 0])
 
     for i in sections:
-        mask = data[:, 0] == i
+        mask = locs[:, 0] == i
         n_samples, offset = mask.sum(), mask.argmax()
         idx = np.random.permutation(n_samples)[:int(mix*n_samples)] + offset
-        data[idx, 1:3] = np.random.permutation(data[idx, 1:3])
+        locs[idx, 1:] = np.random.permutation(locs[idx, 1:])
 
     if return_tensor:
         data = torch.tensor(data, dtype=torch.float32)

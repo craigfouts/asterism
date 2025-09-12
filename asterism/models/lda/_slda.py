@@ -12,7 +12,7 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 from ...utils import relabel
 
-def distribute(data, n_documents=None, scale=1., n_neighbors=4):
+def distribute(locs, n_documents=None, scale=1., n_neighbors=4):
     """Uniformly distributes document locations proximally to sample locations
     and computes a local density-based variance for each document.
     
@@ -33,20 +33,20 @@ def distribute(data, n_documents=None, scale=1., n_neighbors=4):
         Document data.
     """
 
-    sections = np.unique(data[:, 0])
+    sections = np.unique(locs[:, 0])
     documents = []
 
     for s in sections:
-        mask = data[:, 0] == s
+        mask = locs[:, 0] == s
 
         if n_documents is None:
             n_documents = mask.sum()//4
 
         idx = np.random.permutation(mask.sum())[:n_documents]
-        locs = data[mask, :3][idx]
-        proximity = cdist(locs[:, 1:], locs[:, 1:], 'sqeuclidean')
+        doc_locs = locs[mask, :3][idx]
+        proximity = cdist(doc_locs[:, 1:], doc_locs[:, 1:], 'sqeuclidean')
         variance = scale*np.sort(proximity, -1)[:, n_neighbors]
-        documents.append(np.hstack([locs, variance[None].T]))
+        documents.append(np.hstack([doc_locs, variance[None].T]))
 
     documents = np.vstack(documents)
 
@@ -70,7 +70,7 @@ def distribute(data, n_documents=None, scale=1., n_neighbors=4):
 
     return documents
 
-def featurize(data, scale=1., n_neighbors=4):
+def featurize(data, locs, scale=1., n_neighbors=4):
     """Creates spatially-smoothed features by applying two Gaussian filters with
     local density-based variances to the given raw data.
     
@@ -89,15 +89,15 @@ def featurize(data, scale=1., n_neighbors=4):
         Smoothed sample features. 
     """
 
-    sections = np.unique(data[:, 0])
+    sections = np.unique(locs[:, 0])
     features = []
 
     for s in sections:
-        mask = data[:, 0] == s
-        proximity = cdist(data[mask, 1:3], data[mask, 1:3], 'sqeuclidean')
+        mask = locs[:, 0] == s
+        proximity = cdist(locs[mask, 1:], locs[mask, 1:], 'sqeuclidean')
         variance = scale*np.sort(proximity, -1)[:, n_neighbors]
         gaussian = np.exp(-proximity/(2*variance))/(np.sqrt(2*np.pi*variance))
-        features.append(gaussian@data[mask, 3:])
+        features.append(gaussian@data[mask])
 
     features = np.vstack(features)
 
@@ -226,16 +226,16 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
         self.likelihood_log = []
         self.labels_ = None
 
-    def _distribute(self, data):
-        return distribute(data, self.n_documents, self.document_scale)
+    def _distribute(self, locs):
+        return distribute(locs, self.n_documents, self.document_scale)
 
-    def _featurize(self, data):
-        return featurize(data, self.word_scale)
+    def _featurize(self, data, locs):
+        return featurize(data, locs, self.word_scale)
     
     def _shuffle(self, words):
         return shuffle(words, self.n_topics, self.documents.shape[0], self.n_words, return_counts=True)
     
-    def build(self, data, n_steps=400):
+    def build(self, data, locs, n_steps=400):
         """Initializes model parameters and class attributes.
         
         Parameters
@@ -251,10 +251,10 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             I return therefore I am.
         """
 
-        self.documents, features = self._distribute(data), self._featurize(data)
+        self.documents, features = self._distribute(locs), self._featurize(data, locs)
         words = KMeans(self.n_words).fit_predict(features)
         topics, documents, self.topic_counts, self.document_counts = self._shuffle(words)
-        self.corpus = np.vstack([data[:, :3].T, topics, documents, words]).T
+        self.corpus = np.vstack([locs.T, topics, documents, words]).T
         self.topics = np.zeros((n_steps, data.shape[0]))
         self.topics[-1:] = topics
 
@@ -432,7 +432,7 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return likelihood
     
-    def fit(self, data, labels=None, n_steps=400, burn_in=300, description='SLDA', verbosity=1):
+    def fit(self, data, locs=None, labels=None, n_steps=400, burn_in=300, description='SLDA', verbosity=1):
         """Computes topic and document assignments for each sample using
         collapsed Gibbs sampling.
 
@@ -455,7 +455,10 @@ class GibbsSLDA(BaseEstimator, ClusterMixin, TransformerMixin):
             I return therefore I am.
         """
 
-        self.build(data, n_steps)
+        if locs is None:
+            data, locs = data[:, 3:], data[:, :3]
+
+        self.build(data, locs, n_steps)
 
         for i in tqdm(range(n_steps), description) if verbosity == 1 else range(n_steps):
             likelihood = self.step(i)

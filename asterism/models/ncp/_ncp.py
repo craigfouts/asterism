@@ -11,10 +11,10 @@ from ...base import buildmethod, Asterism
 from ...utils import log_norm, shuffle
 from ...utils.nets import OPTIM, MLP
 
-def split(X, y):
-    n_datasets, n_samples = X[:, 0].unique().shape[0] - 1, (X[:, 0] == 0).sum()
-    split = X.shape[0] - X[X[:, 0] == n_datasets].shape[0]
-    X_train, y_train = X[:split].view(n_datasets, split//n_datasets, X.shape[-1])[..., 3:], y[:n_samples]
+def split(X, s, y):
+    n_datasets, n_samples = s[:, 0].unique().shape[0] - 1, (s[:, 0] == 0).sum()
+    split = X.shape[0] - X[s[:, 0] == n_datasets].shape[0]
+    X_train, y_train = X[:split].view(n_datasets, split//n_datasets, X.shape[-1]), y[:n_samples]
     X_test = (X[split:] - F.pad(n_datasets*torch.ones((n_samples, 1)), (0, X.shape[-1] - 1)))[None]
     y_test = y[split:]
 

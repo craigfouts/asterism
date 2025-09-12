@@ -23,8 +23,9 @@ def _format_ax(ax, title=None, aspect='equal', show_ax=True):
 
     return ax
 
-def _make_figure(n_sections=1, figsize=5, colormap=None, labels=None):
-    fig, ax = plt.subplots(1, n_sections, figsize=figsize)
+def _make_plot(n_sections=1, fig_size=5, colormap=None, labels=None):
+    fig_size = to_list(2, n_sections*fig_size)
+    fig, ax = plt.subplots(1, n_sections, figsize=fig_size)
     axes = (ax,) if n_sections == 1 else ax
 
     if colormap is not None:
@@ -37,19 +38,18 @@ def _make_figure(n_sections=1, figsize=5, colormap=None, labels=None):
         return fig, axes, cmap
     return fig, axes
 
-def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None, return_fig=False):
-    if not sectioned:
-        data = np.hstack((np.zeros((data.shape[0], 1)), data))
+def show_dataset(locs, labels, size=15, fig_size=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None, return_fig=False):
+    if locs.shape[1] < 3:
+        locs = np.hstack((np.zeros((locs.shape[0], 1)), locs))
 
-    sections = np.unique(data[:, 0])
+    sections = np.unique(locs[:, 0])
     n_sections = sections.shape[0]
     title, size = to_list(n_sections, title, size)
-    figsize = to_list(2, figsize*n_sections)
-    fig, axes, cmap, norm = _make_figure(n_sections, figsize, colormap, labels)
+    fig, axes, cmap, norm = _make_plot(n_sections, fig_size, colormap, labels)
 
     for i, a, t, s in zip(sections, axes, title, size):
-        mask = data[:, 0] == i 
-        a.scatter(*data[mask, 1:3].T, s=s, c=cmap(norm(labels[mask])))
+        mask = locs[:, 0] == i 
+        a.scatter(*locs[mask, 1:].T, s=s, c=cmap(norm(labels[mask])))
         _format_ax(a, t, aspect='equal', show_ax=show_ax)
 
     if show_colorbar:
@@ -64,18 +64,18 @@ def show_dataset(data, labels, sectioned=True, size=15, figsize=5, title=None, c
         plt.show()
 
 @singledispatch
-def show_comparison(data, labels, topics, title1='dataset', title2='predictions', **kwargs):
-    offset = np.pad(np.ones((data.shape[0], 1)), ((0, 0), (0, data.shape[-1] - 1)))
-    X, y = np.concat((data, data + offset)), np.concat((labels, topics))
+def show_comparison(locs, labels, topics, title1='dataset', title2='predictions', **kwargs):
+    offset = np.pad(np.ones((locs.shape[0], 1)), ((0, 0), (0, locs.shape[-1] - 1)))
+    X, y = np.concat((locs, locs + offset)), np.concat((labels, topics))
     _, axes = show_dataset(X, y, return_fig=True, **kwargs)
     axes[0].set_title(title1)
     axes[1].set_title(title2)
     plt.show()
 
 @show_comparison.register(torch.Tensor)
-def _(data, labels, topics, title1='dataset', title2='predictions', **kwargs):
-    offset = F.pad(torch.ones((data.shape[0], 1)), (0, data.shape[-1] - 1))
-    X, y = np.concat((data, data + offset)), np.concat((labels, topics))
+def _(locs, labels, topics, title1='dataset', title2='predictions', **kwargs):
+    offset = F.pad(torch.ones((locs.shape[0], 1)), (0, locs.shape[-1] - 1))
+    X, y = np.concat((locs, locs + offset)), np.concat((labels, topics))
     _, axes = show_dataset(X, y, return_fig=True, **kwargs)
     axes[0].set_title(title1)
     axes[1].set_title(title2)

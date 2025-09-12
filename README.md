@@ -3,25 +3,25 @@ Asterism - Experiments with Point Cloud Clustering
 Implementations of semantic segmentation algorithms and spatial topic models applied to point cloud data. Current methods include variations of latent Dirichlet allocation, a vector quantized-autoencoder, and a neural clustering process. Also a test bed for PriorLDA, a nonparametric topic model with encoded spatial priors.
 
 ## Latent Dirichlet Allocation using Collapsed Gibbs Sampling
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/f9e4b0fc-d87e-44d1-9698-1b938eb68b33" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/263b75a0-05fc-4276-9cb6-7257da40d311" />
 
 ## Latent Dirichlet Allocation using Stochastic Variational Inference
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/acee916f-cff1-4c34-aa32-9e68180ba528" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/ceaf08f0-5641-4cd1-8869-e886a2ef069e" />
 
 ## Spatial Latent Dirichlet Allocation using Collapsed Gibbs Sampling
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/e5899859-e20e-4bf6-884d-a685f129574c" />
+<img width="794" height="395" alt="image" src="https://github.com/user-attachments/assets/5eb49578-67cf-490e-b267-683977b07009" />
 
 ## Gaussian Softmax Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/5bb92ac0-212a-42df-8319-8119e69d290c" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/96f7fb1a-18ad-4d30-9d3e-79d17e75574d" />
 
 ## Gaussian Stick-Breaking Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/aa47649f-61d8-40b5-a0c6-49749e41dcfb" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/53ebb091-6b03-4cd7-a310-992522c7df27" />
 
 ## Recurrent Stick-Breaking Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/7114ba2a-6077-48fc-b5e7-7aeaf6f8e815" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/9ba14126-e3a9-4e6e-8b78-36bd02b17ba8" />
 
 ## Vector Quantized-Autoencoder
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/f6ceaa78-2e0c-4ee6-ae18-d0585f79a39f" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/e341ec63-0db8-4986-80cc-953827596d78" />
 
 ## Neural Clustering Process
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/661c6a74-f6ea-4b7a-96f0-366e2a3aad36" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/7cdeaaf8-b56a-4582-a8fb-0baecc1c6d15" />

@@ -12,6 +12,15 @@ from matplotlib import cm, colormaps, colors
 from torch.nn import functional as F
 from ._utils import to_list
 
+def _format_data(locs, labels=None):
+    if locs.shape[1] < 3:
+        locs = np.hstack((np.zeros((locs.shape[0], 1)), locs))
+
+    if labels is None:
+        labels = np.ones(locs.shape[0], dtype=np.int32)
+
+    return locs, labels
+
 def _format_ax(ax, title=None, aspect='equal', show_ax=True):
     if title is not None:
         ax.set_title(title)
@@ -38,10 +47,8 @@ def _make_plot(n_sections=1, fig_size=5, colormap=None, labels=None):
         return fig, axes, cmap
     return fig, axes
 
-def show_dataset(locs, labels, size=15, fig_size=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None, return_fig=False):
-    if locs.shape[1] < 3:
-        locs = np.hstack((np.zeros((locs.shape[0], 1)), locs))
-
+def show_dataset(locs, labels=None, size=15, fig_size=5, title=None, colormap='Set3', show_ax=False, show_colorbar=False, path=None, return_fig=False):
+    locs, labels = _format_data(locs, labels)
     sections = np.unique(locs[:, 0])
     n_sections = sections.shape[0]
     title, size = to_list(n_sections, title, size)

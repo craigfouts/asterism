@@ -36,8 +36,8 @@ class NTM(Asterism, nn.Module):
         return self
     
     def _evaluate(self, X):
-        z, kld = self._encoder(X, return_kld=True)
-        X_ = self._decoder(self._g_model(z))
+        Z, kld = self._encoder(X, return_kld=True)
+        X_ = self._decoder(self._g_model(Z))
         loss = (X_ - X).square().sum()/X.shape[0] + self.kld_scale*kld
 
         return loss
@@ -45,10 +45,10 @@ class NTM(Asterism, nn.Module):
     def _step(self):
         loss = 0.
 
-        for x in self._loader:
-            x_loss = self._evaluate(x)
-            x_loss.backward()
-            loss += x_loss.item()
+        for X in self._loader:
+            X_loss = self._evaluate(X)
+            X_loss.backward()
+            loss += X_loss.item()
 
         self._optim.step()
         self._optim.zero_grad()
@@ -59,6 +59,6 @@ class NTM(Asterism, nn.Module):
         if eval:
             self.eval()
 
-        topics = (X@self._decoder[0][0].weight.detach()).argmax(-1)
+        topics = (X@self._decoder[0][0].weight).argmax(-1).detach()
 
         return topics

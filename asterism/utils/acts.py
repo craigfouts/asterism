@@ -8,11 +8,11 @@ from torch import nn
 from torch.nn import functional as F
 
 class Dirichlet(nn.Module):
-    def forward(self, x, sigmoid=True):
+    def forward(self, X, sigmoid=True):
         if sigmoid:
-            x = F.sigmoid(x)
+            X = F.sigmoid(X)
 
-        products = F.pad((1 - x).cumprod(-1), (1, 0), value=1)
-        weights = F.pad(x, (0, 1), value=1)*products
+        products = F.pad((1 - X).cumprod(-1), (1, 0), value=1)
+        weights = F.pad(X, (0, 1), value=1)*products
 
         return weights

@@ -30,9 +30,9 @@ class VQAE(Asterism, nn.Module):
 
         return self
     
-    def _quantize(self, z, z_grad=False, c_grad=False, return_loss=False):
-        embeddings = z if z_grad else z.detach()
-        codebook = self._codebook if c_grad else self._codebook.detach()
+    def _quantize(self, Z, Z_grad=False, C_grad=False, return_loss=False):
+        embeddings = Z if Z_grad else Z.detach()
+        codebook = self._codebook if C_grad else self._codebook.detach()
         cdist = (embeddings[:, None] - codebook[None]).square().sum(-1)
         topics = cdist.argmin(-1)
         
@@ -43,11 +43,11 @@ class VQAE(Asterism, nn.Module):
         return topics
     
     def _evaluate(self, X):
-        z = self._encoder(X)
-        topics, z_loss = self._quantize(z, z_grad=True, return_loss=True)
-        _, c_loss = self._quantize(z, c_grad=True, return_loss=True)
+        Z = self._encoder(X)
+        topics, Z_loss = self._quantize(Z, Z_grad=True, return_loss=True)
+        _, C_loss = self._quantize(Z, C_grad=True, return_loss=True)
         X_ = self._decoder(self._codebook[topics])
-        loss = z_loss + c_loss + (X_ - X).square().sum().sqrt()
+        loss = Z_loss + C_loss + (X_ - X).square().sum().sqrt()
 
         return loss
     

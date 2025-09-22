@@ -122,8 +122,8 @@ class NCP(Asterism, nn.Module):
         mask, nll = torch.randperm(X.shape[0])[:self._batch_size], 0
 
         for _ in range(n_perms):
-            data, labels = shuffle(X[mask], y, sort=True, cut=n_samples)
-            perm_nll = self._encoder.evaluate(data, labels)
+            X_, y_ = shuffle(X[mask], y, sort=True, cut=n_samples)
+            perm_nll = self._encoder.evaluate(X_, y_)
             perm_nll.backward()
             nll += perm_nll.item()
 
@@ -139,6 +139,6 @@ class NCP(Asterism, nn.Module):
         if X.ndim < 3 or X.shape[0] == 1:
             X = X.repeat(self._batch_size, 1, 1)
 
-        topics = self._encoder(X)
+        topics = self._encoder(X).detach()
 
         return topics

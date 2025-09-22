@@ -7,15 +7,18 @@ License: Apache 2.0 license
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
+from torch_cluster import knn
+from torch_geometric.nn.conv import SimpleConv
 from ...base import Asterism
 from ...utils.nets import OPTIM, Encoder, MLP, RNN
 
-class RSB(Asterism, nn.Module):
-    def __init__(self, min_topics=1, *, channels=(64, 32), topic_rate=.2, kld_scale=.1, optim='adam', desc='RSB', seed=None):
+class ATLAS(Asterism, nn.Module):
+    def __init__(self, min_topics=1, *, channels=(128, 32), doc_size=8, topic_rate=.2, kld_scale=.1, optim='adam', desc='ATLAS', seed=None):
         super().__init__(desc, seed)
 
         self.min_topics = min_topics
         self.channels = channels
+        self.doc_size = doc_size
         self.topic_rate = topic_rate
         self.kld_scale = kld_scale
         self.optim = optim
@@ -25,11 +28,12 @@ class RSB(Asterism, nn.Module):
         self._n_steps = 1000
         self.topic_log_ = []
 
-    def _build(self, X, learning_rate=1e-2, batch_size=128, shuffle=True):
+    def _build(self, X, locs, learning_rate=1e-2, batch_size=128, shuffle=True):
         if batch_size == -1:
             batch_size = X.shape[0]
 
-        self._loader = DataLoader(X, batch_size, shuffle)
+        self._conv, edges = SimpleConv(), knn(locs, locs, self.doc_size)
+        self._loader = DataLoader(self._conv(X, edges), batch_size, shuffle) 
         self._encoder = Encoder(X.shape[1], *self._channels, act_layer='prelu')
         self._dt_rnn = RNN(self._channels[-1], bias=False, act_layer='prelu')
         self._tw_rnn = RNN(self._channels[-1], bias=False, act_layer='prelu')
@@ -51,7 +55,7 @@ class RSB(Asterism, nn.Module):
             return X, weights
         return weights
     
-    def _evaluate(self, X, update=True):
+    def _evaluate(self, X):
         Z, kld = self._encoder(X, return_kld=True)
         X_k, _ = self._generate(Z, self.n_topics_ - 1)
         X_K, weights = self._generate(Z)
@@ -60,10 +64,10 @@ class RSB(Asterism, nn.Module):
 
         if self.n_topics_ > (X@weights.T).argmax(-1).unique().shape[0]:
             self.n_topics_ -= 1
-        if update and (loss_k - loss_K).sum()/loss_K.sum() > self.topic_rate:
+        elif (loss_k - loss_K).sum()/loss_K.sum() > self.topic_rate:
             self.n_topics_ += 1
 
-        loss = loss_K.sum() + self.kld_scale*kld
+        loss = loss_K.sum().sqrt() + self.kld_scale*kld
 
         return loss
     
@@ -81,11 +85,12 @@ class RSB(Asterism, nn.Module):
 
         return loss
     
-    def _predict(self, X, eval=True):
+    def _predict(self, X, locs, eval=True):
         if eval:
             self.eval()
 
-        weights = self._generate()
-        topics = (X@weights.T).argmax(-1).detach()
+        edges = knn(locs, locs, self.doc_size)
+        X_, weights = self._conv(X, edges), self._generate()
+        topics = (X_@weights.T).argmax(-1).detach()
 
         return topics

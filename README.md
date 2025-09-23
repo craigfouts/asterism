@@ -1,6 +1,6 @@
 Asterism - Experiments with Point Cloud Clustering
 ==================================================
-Implementations of semantic segmentation algorithms and spatial topic models applied to point cloud data. Current methods include variations of latent Dirichlet allocation, a vector quantized-autoencoder, and a neural clustering process. Also a test bed for ATLAS, an adaptable topic model for discovering latent areal structures.
+Implementations of semantic segmentation algorithms and spatial topic models applied to point cloud data. Current methods include variations of latent Dirichlet allocation, a vector quantized-autoencoder, and a neural clustering process. Also a test bed for ATLAS, an adaptable topic model for discovering latent anatomical structures.
 
 ## Adaptable Topic Modeling of Latent Areal Structures
 <img width="794" height="395" alt="image" src="https://github.com/user-attachments/assets/c0ef04f7-384f-4372-94df-020a91226d23" />

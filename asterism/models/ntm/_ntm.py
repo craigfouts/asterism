@@ -25,11 +25,14 @@ class NTM(Asterism, nn.Module):
         self._n_steps = 1000
     
     def _build(self, X, learning_rate=1e-2, batch_size=128, shuffle=True):
+        if batch_size == -1:
+            batch_size = X.shape[0]
+            
         out_channels = self.max_topics - (self.mode == 'dirichlet')
         self._loader = DataLoader(X, batch_size, shuffle)
         self._encoder = Encoder(X.shape[1], *self.channels)
         self._g_model = MLP(self.channels[-1], out_channels, final_act=self.mode, dim=-1)
-        self._decoder = MLP(self.max_topics, X.shape[1], final_bias=False)
+        self._decoder = MLP(out_channels, X.shape[1], final_bias=False)
         self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate)
         self.train()
 

@@ -6,13 +6,25 @@ License: Apache 2.0 license
 
 import numpy as np
 import torch
-from functools import singledispatch
-from inspect import signature
+from functools import singledispatch, wraps
+from inspect import getcallargs, signature
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
+
+def attrmethod(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        method_kwargs = dict(getcallargs(method, self, *args, **kwargs))
+        del method_kwargs['self']
+
+        for key, val in method_kwargs.items():
+            setattr(self, '_' + key, val)
+
+        return method(self, *args, **kwargs)
+    return wrapper
 
 def get_kwargs(*func, **kwargs):
     func_kwargs = []
@@ -39,7 +51,7 @@ def to_list(length, *items):
     return lists
 
 @singledispatch
-def relabel(labels, target=None):
+def relabel(labels, target=None):  # TODO: see ATLAS
     unique, inverse = np.unique_inverse(labels)
 
     if target is None:
@@ -118,14 +130,19 @@ def _(data, k=3, n_steps=10, n_perms=100, verbosity=1, desc='KMeans'):
 
     return labels
 
+def normalize(x):
+    x = x/x.sum()
+
+    return x
+
 @singledispatch
-def log_norm(x):
+def log_normalize(x):
     m, _ = x.max(1, keepdims=True)
     x = x - m - (x - m).exp().sum(1, keepdims=True).log()
 
     return x
 
-@log_norm.register(torch.Tensor)
+@log_normalize.register(torch.Tensor)
 def _(x):
     m, _ = x.max(1, keepdim=True)
     x = x - m - (x - m).exp().sum(1, keepdim=True).log()

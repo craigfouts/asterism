@@ -14,7 +14,7 @@ from sklearn.utils import check_array, check_random_state
 from tqdm import tqdm
 from ..utils import get_kwargs, relabel
 
-@singledispatch
+@singledispatch  # TODO: this should all go in utils
 def _check(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
     if isinstance(X, (tuple, list)):
         X = np.array(X)
@@ -41,8 +41,6 @@ def _(X, ensure_min_features=1, accept_complex=False, accept_sparse=False, accep
 def checkmethod(method, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
     @wraps(method)
     def wrapper(self, X, *args, **kwargs):
-        self.seed_ = check_random_state(self.seed if hasattr(self, 'seed') else 0)
-
         if not hasattr(self, 'check') or self.check:
             X = _check(X, 
                 self.ensure_min_features if hasattr(self, 'ensure_min_features') else ensure_min_features, 
@@ -93,6 +91,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         self.accept_large_sparse = accept_large_sparse
         self.ensure_all_finite = ensure_all_finite
 
+        self._seed = check_random_state(seed)
         self._n_steps = 100
         self._step_n = 0
 

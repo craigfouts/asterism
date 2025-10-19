@@ -7,5 +7,7 @@ License: Apache 2.0 license
 from ._base import buildmethod, checkmethod, Asterism
 
 __all__ = [
-    'buildmethod', 'checkmethod', 'Asterism'
+    'buildmethod', 
+    'checkmethod', 
+    'Asterism'
 ]

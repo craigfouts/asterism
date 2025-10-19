@@ -8,7 +8,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from ...base import buildmethod, Asterism
-from ...utils import log_norm, shuffle
+from ...utils import log_normalize, shuffle
 from ...utils.nets import OPTIM, MLP
 
 def split(X, s, y):
@@ -73,7 +73,7 @@ class Encoder(nn.Module):
         log_probs = torch.zeros((self._batch_size, self.n_topics_ + 1))
         log_probs[:, :-1] = self._lp_mlp(torch.cat((BC_k, US_k), -1))[..., 0].T
         log_probs[:, -1] = self._lp_mlp(torch.cat((BC_K, self._US), 1)).squeeze()
-        log_probs = log_norm(log_probs)
+        log_probs = log_normalize(log_probs)
 
         return log_probs
     

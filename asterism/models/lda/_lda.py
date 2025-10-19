@@ -14,7 +14,7 @@ from pyro.optim import Adam
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from ...base import Asterism
-from ...utils import kmeans
+from ...utils import kmeans, normalize
 
 class GibbsLDA(Asterism):
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
@@ -30,71 +30,68 @@ class GibbsLDA(Asterism):
         
     def _build(self, X):
         knn = cdist(X, X).argsort(-1)[:, :self.doc_size]
-        self._docs = kmeans(X, self.vocab_size, verbosity=0)[knn]
-        self._words, topic_range = self._docs.flatten(), np.arange(self.n_topics)[None].T
-        self._topics = np.zeros((self._n_steps, self._words.shape[0]), dtype=np.int32)
-        self._topics[-1:] = self.seed_.choice(self.n_topics, self._words.shape[0])
-        self._dt_post = np.eye(self.n_topics)[self._topics[-1].reshape(*self._docs.shape)].sum(1)
-        self._tw_post = (self._topics[-1] == topic_range)@np.eye(self.vocab_size)[self._words]
+        self.docs_ = kmeans(X, self.vocab_size, verbosity=0)[knn]
+        self.words_, topic_range = self.docs_.flatten(), np.arange(self.n_topics)[None].T
+        self.topics_ = np.zeros((self._n_steps, X.shape[0]), dtype=np.int32)
+        self.topics_[-1:] = self._seed.choice(self.n_topics, X.shape[0])
+        self.dt_post_ = np.eye(self.n_topics)[self.topics_[-1].reshape(*self.docs_.shape)].sum(1)
+        self.tw_post_ = (self.topics_[-1] == topic_range)@np.eye(self.vocab_size)[self.words_]
 
         return self
     
     def _query(self, idx):
-        doc = idx//self._docs.shape[1]
-        topic = self._topics[self._step_n - 1, idx]
-        word = self._words[idx]
+        doc = idx//self.docs_.shape[1]
+        topic = self.topics_[self._step_n - 1, idx]
+        word = self.words_[idx]
 
         return doc, topic, word
     
     def _decrement(self, doc, topic, word, return_posts=False):
-        self._dt_post[doc, topic] -= 1
-        self._tw_post[topic, word] -= 1
+        self.dt_post_[doc, topic] -= 1
+        self.tw_post_[topic, word] -= 1
 
         if return_posts:
-            return self._dt_post, self._tw_post
+            return self.dt_post_, self.tw_post_
         return self
     
     def _increment(self, doc, topic, word, return_posts=False):
-        self._dt_post[doc, topic] += 1
-        self._tw_post[topic, word] += 1
+        self.dt_post_[doc, topic] += 1
+        self.tw_post_[topic, word] += 1
 
         if return_posts:
-            return self._dt_post, self._tw_post
+            return self.dt_post_, self.tw_post_
         return self
         
-    def _sample(self, doc, word, return_probs=False):
-        dt_probs = self._dt_post[doc] + self.dt_prior
-        dt_probs /= dt_probs.sum()
-        tw_probs = self._tw_post[:, word] + self.tw_prior
-        tw_probs /= (self._tw_post + self.tw_prior).sum(-1)
-        probs = dt_probs*tw_probs
-        probs /= probs.sum()
-        topic = self.seed_.choice(self.n_topics, p=probs)
+    def _sample_topic(self, doc, word, return_probs=False):
+        dt_probs = normalize(self.dt_post_[doc] + self.dt_prior)
+        tw_probs = self.tw_post_[:, word] + self.tw_prior
+        tw_probs /= (self.tw_post_ + self.tw_prior).sum(-1)
+        probs = normalize(dt_probs*tw_probs)
+        topic = self._seed.choice(self.n_topics, p=probs)
 
         if return_probs:
             return topic, probs
         return topic
     
     def _step(self):
-        idx = self.seed_.permutation(self._words.shape[0])
-        likelihood = 0
+        idx, likelihood = self._seed.permutation(self.words_.shape[0]), 0
 
         for i in idx:
             doc, topic, word = self._query(i)
             self._decrement(doc, topic, word)
-            new_topic, probs = self._sample(doc, word, return_probs=True)
+            new_topic, topic_probs = self._sample_topic(doc, word, return_probs=True)
             self._increment(doc, new_topic, word)
-            self._topics[self._step_n, i] = new_topic
-            likelihood += probs[new_topic]
+            self.topics_[self._step_n, i] = new_topic
+            likelihood += topic_probs[new_topic]
 
         return likelihood
     
     def _predict(self):
         burn_in = self._n_steps//2
-        word_topics = mode(self._topics[burn_in:]).mode
-        doc_topics = mode(word_topics.reshape(*self._docs.shape), -1).mode
+        topics = mode(self.topics_[burn_in:]).mode
+        topics = mode(topics.reshape(*self.docs_.shape), -1).mode
         
-        return doc_topics
+        return topics
 
 class PyroLDA(Asterism):
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA'):
@@ -112,7 +109,7 @@ class PyroLDA(Asterism):
 
     def _build(self, X, learning_rate=1e-1, batch_size=128):
         knn = torch.cdist(X, X).topk(self.doc_size, largest=False).indices
-        self._docs = kmeans(X, self.vocab_size, verbosity=0)[knn].T
+        self.docs_ = kmeans(X, self.vocab_size, verbosity=0)[knn].T
         self._optim, self._batch_size = Adam({'lr': learning_rate}), batch_size
         self._elbo = TraceEnum_ELBO(max_plate_nesting=2)
         self._svi = SVI(self._model, self._guide, self._optim, self._elbo)
@@ -147,11 +144,11 @@ class PyroLDA(Asterism):
         return self
     
     def _step(self):
-        loss = self._svi.step(self._docs)
+        loss = self._svi.step(self.docs_)
 
         return loss
     
     def _predict(self):
-        labels = pyro.sample('dt_probs', Dirichlet(self._dt_post)).argmax(-1).detach()
+        topics = pyro.sample('dt_probs', Dirichlet(self._dt_post)).argmax(-1).detach()
 
-        return labels
+        return topics

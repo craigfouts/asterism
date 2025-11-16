@@ -13,27 +13,23 @@ from pyro.infer import SVI, TraceEnum_ELBO
 from pyro.optim import Adam
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
-from ...base import Asterism
+from ...core import Asterism
 from ...utils import kmeans, normalize
+from ...utils.sugar import attrmethod
 
 class GibbsLDA(Asterism):
+    @attrmethod
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
         super().__init__(desc, seed)
-
-        self.n_topics = n_topics
-        self.doc_size = doc_size
-        self.vocab_size = vocab_size
-        self.dt_prior = dt_prior
-        self.tw_prior = tw_prior
 
         self._n_steps = 100
         
     def _build(self, X):
-        knn = cdist(X, X).argsort(-1)[:, :self.doc_size]
-        self.docs_ = kmeans(X, self.vocab_size, verbosity=0)[knn]
+        edges = cdist(X, X).argsort(-1)[:, :self.doc_size]
+        self.docs_ = kmeans(X, self.vocab_size, seed=self._state)[edges]
         self.words_, topic_range = self.docs_.flatten(), np.arange(self.n_topics)[None].T
-        self.topics_ = np.zeros((self._n_steps, X.shape[0]), dtype=np.int32)
-        self.topics_[-1:] = self._seed.choice(self.n_topics, X.shape[0])
+        self.topics_ = np.zeros((self._n_steps, n_words := len(self.words_)), dtype=np.int32)
+        self.topics_[-1] = self._state.choice(self.n_topics, n_words)
         self.dt_post_ = np.eye(self.n_topics)[self.topics_[-1].reshape(*self.docs_.shape)].sum(1)
         self.tw_post_ = (self.topics_[-1] == topic_range)@np.eye(self.vocab_size)[self.words_]
 
@@ -67,14 +63,14 @@ class GibbsLDA(Asterism):
         tw_probs = self.tw_post_[:, word] + self.tw_prior
         tw_probs /= (self.tw_post_ + self.tw_prior).sum(-1)
         probs = normalize(dt_probs*tw_probs)
-        topic = self._seed.choice(self.n_topics, p=probs)
+        topic = self._state.choice(self.n_topics, p=probs)
 
         if return_probs:
             return topic, probs
         return topic
     
     def _step(self):
-        idx, likelihood = self._seed.permutation(self.words_.shape[0]), 0
+        idx, likelihood = self._state.permutation(self.words_.shape[0]), 0
 
         for i in idx:
             doc, topic, word = self._query(i)
@@ -94,9 +90,9 @@ class GibbsLDA(Asterism):
         return topics
 
 class PyroLDA(Asterism):
-    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA'):
+    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA', seed=None):
         pyro.clear_param_store()
-        super().__init__(desc)
+        super().__init__(desc, seed, torch_state=True)
 
         self.n_topics = n_topics
         self.doc_size = doc_size
@@ -108,8 +104,8 @@ class PyroLDA(Asterism):
         self._n_steps = 1000
 
     def _build(self, X, learning_rate=1e-1, batch_size=128):
-        knn = torch.cdist(X, X).topk(self.doc_size, largest=False).indices
-        self.docs_ = kmeans(X, self.vocab_size, verbosity=0)[knn].T
+        edges = torch.cdist(X, X).topk(self.doc_size, largest=False).indices
+        self.docs_ = kmeans(X, self.vocab_size, verbosity=0, seed=self._state)[edges].T
         self._optim, self._batch_size = Adam({'lr': learning_rate}), batch_size
         self._elbo = TraceEnum_ELBO(max_plate_nesting=2)
         self._svi = SVI(self._model, self._guide, self._optim, self._elbo)

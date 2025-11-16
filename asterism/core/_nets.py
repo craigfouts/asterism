@@ -8,7 +8,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from ._base import buildmethod, checkmethod
+from ._core import buildmethod, checkmethod
 from ..utils import get_kwargs
 from ..utils.nets import OPTIM, Encoder, MLP
 

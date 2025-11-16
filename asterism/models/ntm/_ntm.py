@@ -6,18 +6,14 @@ License: Apache 2.0 license
 
 from torch import nn
 from torch.utils.data import DataLoader
-from ...base import Asterism
-from ...utils.nets import OPTIM, Encoder, MLP
+from ...core import Asterism
+from ...utils.nets import OPTIMS, Encoder, MLP
+from ...utils.sugar import attrmethod
 
 class NTM(Asterism, nn.Module):
+    @attrmethod
     def __init__(self, max_topics=100, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', seed=None):
-        super().__init__(desc, seed)
-
-        self.max_topics = max_topics
-        self.channels = channels
-        self.kld_scale = kld_scale
-        self.mode = mode
-        self.optim = optim
+        super().__init__(desc, seed, torch_state=True)
 
         if mode not in ('softmax', 'dirichlet'):
             raise ValueError(f'Mode `{mode}` not supported.')
@@ -29,11 +25,11 @@ class NTM(Asterism, nn.Module):
             batch_size = X.shape[0]
             
         out_channels = self.max_topics - (self.mode == 'dirichlet')
-        self._loader = DataLoader(X, batch_size, shuffle)
-        self._encoder = Encoder(X.shape[1], *self.channels)
+        self._loader = DataLoader(X, batch_size, shuffle, generator=self._state)
+        self._encoder = Encoder(in_channels := X.shape[1], *self.channels)
         self._g_model = MLP(self.channels[-1], out_channels, final_act=self.mode, dim=-1)
-        self._decoder = MLP(out_channels, X.shape[1], final_bias=False)
-        self._optim = OPTIM[self.optim](self.parameters(), lr=learning_rate)
+        self._decoder = MLP(self.max_topics, in_channels, final_bias=False)
+        self._optim = OPTIMS[self.optim](self.parameters(), lr=learning_rate)
         self.train()
 
         return self
@@ -49,8 +45,7 @@ class NTM(Asterism, nn.Module):
         loss = 0.
 
         for X in self._loader:
-            X_loss = self._evaluate(X)
-            X_loss.backward()
+            (X_loss := self._evaluate(X)).backward()
             loss += X_loss.item()
 
         self._optim.step()

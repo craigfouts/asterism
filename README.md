@@ -5,28 +5,28 @@ Implementations of semantic segmentation algorithms and dimension reduction mode
 Python version: 3.14
 
 ## Adaptable Topic Modeling of Latent Anatomical Structures
-<img width="794" height="395" alt="image" src="https://github.com/user-attachments/assets/c0ef04f7-384f-4372-94df-020a91226d23" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/278ab06a-f9e7-4de8-8769-6e6f2b38c274" />
 
 ## Latent Dirichlet Allocation using Collapsed Gibbs Sampling
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/3d762eff-6d6c-4d88-9d54-562908a0ee30" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/87c7c256-0029-4540-b669-bf0763012a10" />
 
 ## Latent Dirichlet Allocation using Stochastic Variational Inference
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/0efec796-c4c5-4518-98f0-28b1dfd302ef" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/165bb1a5-d2ac-4a58-8f2f-6c80ac174fa7" />
 
 ## Spatial Latent Dirichlet Allocation using Collapsed Gibbs Sampling
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/1deb18d5-3262-435d-ad9d-c5402df5a0f2" />
+<img width="794" height="395" alt="image" src="https://github.com/user-attachments/assets/3ee2af0f-1294-4963-a5fc-0c94494e063d" />
 
 ## Gaussian Softmax Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/f1211498-3930-410c-a660-2014bec50eec" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/ce16da53-096f-45cc-a1d8-8ab4d7ba7add" />
 
 ## Gaussian Stick-Breaking Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/550cbbd9-086f-4edc-9939-92aec093e8c7" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/52b9629c-b60c-44db-a3bb-6471ba46d798" />
 
 ## Recurrent Stick-Breaking Neural Topic Model
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/0af96286-456d-4232-b2d0-46e32a015ee3" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/f123b093-baaa-42d6-ad62-5c0c078775ee" />
 
 ## Vector Quantized-Autoencoder
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/80bdc2cd-d50e-4160-8818-e73119df9b5a" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/ec29a905-c57d-4414-b0ed-dd24ade5b3cd" />
 
 ## Neural Clustering Process
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/e713d0ce-cd83-4316-ad7b-4bbaf3767d40" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/daec1555-c2ad-4ed4-b734-fc469af57050" />

@@ -12,6 +12,11 @@ from matplotlib import cm, colormaps, colors
 from torch.nn import functional as F
 from ._utils import to_list
 
+__all__ = [
+    'show_dataset',
+    'show_comparison'
+]
+
 def _format_data(locs, labels=None):
     if locs.shape[1] < 3:
         locs = np.hstack((np.zeros((locs.shape[0], 1)), locs))

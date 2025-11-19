@@ -4,12 +4,15 @@ Correspondence: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
 '''
 
-import numpy as np
-import torch
 from functools import singledispatch, wraps
 from inspect import getcallargs
-from sklearn.utils import check_array
-from ._utils import get_kwargs
+from ._utils import check_data, get_kwargs
+
+__all__ = [
+    'attrmethod',
+    'buildmethod',
+    'checkmethod'
+]
 
 @singledispatch
 def attrmethod(method):
@@ -65,36 +68,6 @@ def _(builder='_build'):
             return method(self, *args, **kwargs)
         return wrapper
     return decorator
-
-@singledispatch
-def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
-    check_kwargs = dict(tuple(locals().items())[2:])
-    check_array_kwargs = get_kwargs(check_array, **check_kwargs)
-    
-    if isinstance(X, (tuple, list)):
-        X = np.array(X)
-
-    X = check_array(X, **check_array_kwargs)
-
-    if not accept_complex and np.iscomplex(X).any():
-        raise ValueError('Complex data not supported.')
-    
-    return X
-
-@check_data.register(torch.Tensor)
-def _(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
-    check_kwargs = dict(tuple(locals().items())[2:])
-    check_array_kwargs = get_kwargs(check_array, **check_kwargs)
-    
-    if isinstance(X, (tuple, list)):
-        X = np.array(X)
-
-    X = torch.tensor(check_array(X, **check_array_kwargs))
-
-    if not accept_complex and torch.is_complex(X):
-        raise ValueError('Complex data not supported.')
-    
-    return X
 
 def checkmethod(method, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
     @wraps(method)

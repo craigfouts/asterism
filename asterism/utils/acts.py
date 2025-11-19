@@ -7,6 +7,10 @@ License: Apache 2.0 license
 from torch import nn
 from torch.nn import functional as F
 
+__all__ = [
+    'Dirichlet'
+]
+
 class Dirichlet(nn.Module):
     def forward(self, X, sigmoid=True):
         if sigmoid:

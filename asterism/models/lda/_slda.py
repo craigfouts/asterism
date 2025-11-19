@@ -12,6 +12,10 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 from ...utils import relabel
 
+__all__ = [
+    'GibbsSLDA'
+]
+
 def distribute(locs, n_documents=None, scale=1., n_neighbors=4):
     """Uniformly distributes document locations proximally to sample locations
     and computes a local density-based variance for each document.

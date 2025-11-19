@@ -12,6 +12,12 @@ from ...utils import log_normalize, shuffle
 from ...utils.nets import OPTIMS, MLP
 from ...utils.sugar import attrmethod
 
+__all__ = [
+    'split',
+    'Encoder',
+    'NCP'
+]
+
 def split(X, s, y):
     n_datasets, n_samples = s[:, 0].unique().shape[0] - 1, (s[:, 0] == 0).sum()
     split = X.shape[0] - X[s[:, 0] == n_datasets].shape[0]

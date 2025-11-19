@@ -10,6 +10,15 @@ from ._utils import get_kwargs, torch_random_state
 from .acts import Dirichlet
 from .sugar import attrmethod
 
+__all__ = [
+    'NORMS',
+    'ACTS',
+    'OPTIMS',
+    'MLP',
+    'RNN',
+    'Encoder'
+]
+
 NORMS = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}
 ACTS = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax, 'dirichlet': Dirichlet}
 OPTIMS = {'adam': optim.Adam, 'sgd': optim.SGD}

@@ -11,6 +11,10 @@ from tqdm import tqdm
 from ..utils import get_kwargs, relabel, torch_random_state
 from ..utils.sugar import buildmethod, checkmethod
 
+__all__ = [
+    'Asterism'
+]
+
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     def __init__(self, desc=None, seed=None, *, torch_state=False, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
         super().__init__()

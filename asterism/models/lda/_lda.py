@@ -17,6 +17,11 @@ from ...core import Asterism
 from ...utils import kmeans, normalize
 from ...utils.sugar import attrmethod
 
+__all__ = [
+    'GibbsLDA',
+    'PyroLDA'
+]
+
 class GibbsLDA(Asterism):
     @attrmethod
     def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', seed=None):

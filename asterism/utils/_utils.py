@@ -12,14 +12,63 @@ from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from sklearn.metrics import confusion_matrix
-from sklearn.utils import check_random_state
+from sklearn.utils import check_array, check_random_state
 from torch import Generator
 from tqdm import tqdm
+from . import _utils_
 
-def get_kwargs(*function, **kwargs):
+__all__ = [
+    'check_data',
+    'fib',
+    'hello',
+    'kmeans',
+    'knn',
+    'log_normalize',
+    'normalize',
+    'relabel',
+    'shuffle',
+    'to_list',
+    'to_tensor',
+    'torch_random_state'
+]
+
+fib = _utils_.fib
+hello = _utils_.hello
+
+@singledispatch
+def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
+    check_kwargs = dict(tuple(locals().items())[2:])
+    check_array_kwargs = get_kwargs(check_array, **check_kwargs)
+    
+    if isinstance(X, (tuple, list)):
+        X = np.array(X)
+
+    X = check_array(X, **check_array_kwargs)
+
+    if not accept_complex and np.iscomplex(X).any():
+        raise ValueError('Complex data not supported.')
+    
+    return X
+
+@check_data.register(torch.Tensor)
+def _(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
+    check_kwargs = dict(tuple(locals().items())[2:])
+    check_array_kwargs = get_kwargs(check_array, **check_kwargs)
+    
+    if isinstance(X, (tuple, list)):
+        X = np.array(X)
+
+    X = torch.tensor(check_array(X, **check_array_kwargs))
+
+    if not accept_complex and torch.is_complex(X):
+        raise ValueError('Complex data not supported.')
+    
+    return X
+
+def get_kwargs(*functions, **kwargs):
     function_kwargs = []
 
-    for f in function:
+    for f in functions:
         keys = signature(f).parameters.keys()
         function_kwargs.append({k: kwargs[k] for k in keys if k in kwargs})
 

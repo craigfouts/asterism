@@ -12,6 +12,10 @@ from ._core import buildmethod, checkmethod
 from ..utils import get_kwargs
 from ..utils.nets import OPTIM, Encoder, MLP
 
+__all__ = [
+    'VAE'
+]
+
 class VAE(BaseEstimator, TransformerMixin, nn.Module):
     def __init__(self, *channels, bias=True, norm_layer='batch', act_layer='relu', dropout=.5, kld_scale=.1, optim='adam', desc='VAE'):
         super().__init__()

@@ -9,6 +9,10 @@ from torch import nn
 from ...core import Asterism
 from ...utils.nets import OPTIMS, Encoder, MLP
 from ...utils.sugar import attrmethod
+
+__all__ = [
+    'VQAE'
+]
         
 class VQAE(Asterism, nn.Module):
     @attrmethod

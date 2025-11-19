@@ -11,6 +11,10 @@ from ...core import Asterism
 from ...utils.nets import OPTIMS, Encoder, MLP, RNN
 from ...utils.sugar import attrmethod
 
+__all__ = [
+    'RSB'
+]
+
 class RSB(Asterism, nn.Module):
     @attrmethod
     def __init__(self, min_topics=1, *, channels=(64, 32), topic_rate=.2, kld_scale=.1, optim='adam', desc='RSB', seed=None):

@@ -13,6 +13,10 @@ from ...utils import knn
 from ...utils.nets import OPTIMS, Encoder, MLP, RNN
 from ...utils.sugar import attrmethod
 
+__all__ = [
+    'ATLAS'
+]
+
 class ATLAS(Asterism, nn.Module):
     @attrmethod
     def __init__(self, min_topics=1, *, channels=(128, 32), doc_size=8, topic_rate=.2, kld_scale=.1, optim='adam', desc='ATLAS', seed=None):

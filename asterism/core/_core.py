@@ -12,7 +12,8 @@ from ..utils import get_kwargs, relabel, torch_random_state
 from ..utils.sugar import buildmethod, checkmethod
 
 __all__ = [
-    'Asterism'
+    'Asterism',
+    'AsterismSpatial'
 ]
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
@@ -58,7 +59,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
     @checkmethod
     @buildmethod
-    def fit(self, X, locs=None, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
+    def fit(self, X, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)
         self.log_ = []
@@ -75,8 +76,29 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         self.labels_ = relabel(self._predict(**predict_kwargs), y)
 
         return self
-    
-    def fit_predict(self, X, locs=None, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
+
+class AsterismSpatial(Asterism):   
+    @checkmethod
+    @buildmethod
+    def fit(self, X, locs, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
+        fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
+        step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)
+        self.log_ = []
+
+        if n_steps is not None:
+            self._n_steps = n_steps
+
+        for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
+            self.log_.append(self._step(**step_kwargs))
+
+            if verbosity == 2 and self._step_n%display_rate == 0:
+                self._display(**display_kwargs)
+
+        self.labels_ = relabel(self._predict(**predict_kwargs), y)
+
+        return self
+
+    def fit_predict(self, X, locs, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         self.fit(X, locs, y, n_steps, verbosity, display_rate, **kwargs)
 
         return self.labels_

@@ -54,7 +54,7 @@ def buildmethod(method):
         return method(self, *args, **kwargs)
     return wrapper
 
-@buildmethod.register(str)
+@buildmethod.register(str)  # FIXME
 def _(builder='_build'):
     def decorator(method):
         @wraps(method)

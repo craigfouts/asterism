@@ -209,7 +209,7 @@ def _(X1, X2=None, k=1, loop=True):
     return edges
 
 def normalize(x):
-    x = x/x.sum()
+    x /= x.sum()
 
     return x
 

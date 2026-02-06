@@ -13,6 +13,7 @@ from pyro.infer import SVI, TraceEnum_ELBO
 from pyro.optim import Adam
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
+from sklearn.cluster import KMeans
 from ...core import Asterism
 from ...utils import kmeans, normalize
 from ...utils.sugar import attrmethod
@@ -31,8 +32,8 @@ class GibbsLDA(Asterism):
         
     def _build(self, X):
         edges = cdist(X, X).argsort(-1)[:, :self.doc_size]
-        self.docs_ = kmeans(X, self.vocab_size, seed=self._state)[edges]
-        self.words_, topic_range = self.docs_.flatten(), np.arange(self.n_topics)[None].T
+        self.docs_ = KMeans(self.vocab_size, random_state=self._state).fit_predict(X)[edges]
+        self.words_, topic_range = self.docs_.flatten(), np.arange(self.n_topics)[:, None]
         self.topics_ = np.zeros((self._n_steps, n_words := len(self.words_)), dtype=np.int32)
         self.topics_[-1] = self._state.choice(self.n_topics, n_words)
         self.dt_post_ = np.eye(self.n_topics)[self.topics_[-1].reshape(*self.docs_.shape)].sum(1)

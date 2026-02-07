@@ -5,7 +5,7 @@ Implementations of semantic segmentation algorithms and dimension reduction mode
 Python version: 3.14
 
 ## Adaptable Topic Modeling of Latent Anatomical Structures
-<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/278ab06a-f9e7-4de8-8769-6e6f2b38c274" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/3e1a267a-14cd-420e-9c5c-40ac08242edc" />
 
 ## Latent Dirichlet Allocation using Collapsed Gibbs Sampling
 <img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/87c7c256-0029-4540-b669-bf0763012a10" />
@@ -14,7 +14,7 @@ Python version: 3.14
 <img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/165bb1a5-d2ac-4a58-8f2f-6c80ac174fa7" />
 
 ## Spatial Latent Dirichlet Allocation using Collapsed Gibbs Sampling
-<img width="794" height="395" alt="image" src="https://github.com/user-attachments/assets/3ee2af0f-1294-4963-a5fc-0c94494e063d" />
+<img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/65fe49ff-f5dd-42ef-877c-2846d1a02d25" />
 
 ## Gaussian Softmax Neural Topic Model
 <img width="794" height="394" alt="image" src="https://github.com/user-attachments/assets/ce16da53-096f-45cc-a1d8-8ab4d7ba7add" />

@@ -8,8 +8,8 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch_geometric.nn.conv import SimpleConv
-from ...core import Asterism
-from ...utils import knn
+from ...core import AsterismSpatial
+from ...utils import knn2D
 from ...utils.nets import OPTIMS, Encoder, MLP, RNN
 from ...utils.sugar import attrmethod
 
@@ -17,7 +17,7 @@ __all__ = [
     'ATLAS'
 ]
 
-class ATLAS(Asterism, nn.Module):
+class ATLAS(AsterismSpatial, nn.Module):
     @attrmethod
     def __init__(self, min_topics=1, *, channels=(128, 32), doc_size=8, topic_rate=.2, kld_scale=.1, optim='adam', desc='ATLAS', seed=None):
         super().__init__(desc, seed, torch_state=True)
@@ -31,8 +31,8 @@ class ATLAS(Asterism, nn.Module):
         if batch_size == -1:
             batch_size = X.shape[0]
 
-        self._conv, edges = SimpleConv(), knn(locs, k=self.doc_size)
-        self._loader = DataLoader(self._conv(X, edges), batch_size, shuffle) 
+        self._X = SimpleConv(aggr='mean')(X, knn2D(locs, self.doc_size))
+        self._loader = DataLoader(self._X, batch_size, shuffle)
         self._encoder = Encoder(in_channels := X.shape[1], *self._channels, act_layer='prelu', seed=self._state)
         self._dt_rnn = RNN(out_channels := self._channels[-1], bias=False, act_layer='prelu', seed=self._state)
         self._tw_rnn = RNN(out_channels, bias=False, act_layer='prelu', seed=self._state)
@@ -58,15 +58,14 @@ class ATLAS(Asterism, nn.Module):
         Z, kld = self._encoder(X, return_kld=True)
         X_k, _ = self._generate(Z, self.n_topics_ - 1)
         X_K, weights = self._generate(Z)
-        loss_k = (X_k - X).square().sum(-1)/(n_samples := X.shape[0])
-        loss_K = (X_K - X).square().sum(-1)/n_samples
-
-        if self.n_topics_ > (X@weights.T).argmax(-1).unique().shape[0]:
-            self.n_topics_ -= 1
-        elif (loss_k - loss_K).sum()/loss_K.sum() > self.topic_rate:
-            self.n_topics_ += 1
-
+        loss_k = (X_k - X).square().sum(-1)/(n := len(X))
+        loss_K = (X_K - X).square().sum(-1)/n
         loss = loss_K.sum().sqrt() + self.kld_scale*kld
+
+        if len((X@weights.T).argmax(-1).unique()) < self.n_topics_:
+            self.n_topics_ -= 1
+        elif (loss_k - loss_K).sum()/loss_K.sum() < self.topic_rate:
+            self.n_topics_ += 1
 
         return loss
     
@@ -88,8 +87,7 @@ class ATLAS(Asterism, nn.Module):
         if eval:
             self.eval()
 
-        edges = knn(locs, locs, self.doc_size)
-        X_, weights = self._conv(X, edges), self._generate()
-        topics = (X_@weights.T).argmax(-1).detach()
+        weights = self._X@self._generate().T
+        topics = weights.argmax(-1).detach()
 
         return topics

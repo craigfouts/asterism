@@ -24,6 +24,7 @@ __all__ = [
     'hello',
     'kmeans',
     'knn',
+    'knn2D',
     'log_normalize',
     'normalize',
     'pad',
@@ -201,24 +202,42 @@ def _(data, k=5, n_steps=100, n_perms=50, desc='KMeans', verbosity=0, seed=None)
     return labels
 
 @singledispatch
-def knn(X1, X2=None, k=1, loop=True):
-    if X2 is None:
-        X2 = X1
-
-    adj = cdist(X1, X2).argsort(-1)
+def knn(X, k=1, loop=True):
+    adj = cdist(X, X).argsort(-1)
     idx = (adj[:, :k] if loop else adj[:, 1:k + 1]).flatten()
-    edges = np.vstack((np.arange(len(X1)).repeat(k), idx))
+    edges = np.vstack((np.arange(len(X)).repeat(k), idx))
 
     return edges
 
 @knn.register(torch.Tensor)
-def _(X1, X2=None, k=1, loop=True):
-    if X2 is None:
-        X2 = X1
-
-    adj = torch.cdist(X1, X2).argsort(-1)
+def _(X, k=1, loop=True):
+    adj = torch.cdist(X, X).argsort(-1)
     idx = (adj[:, :k] if loop else adj[:, 1:k + 1]).flatten()
-    edges = torch.vstack((torch.arange(len(X1)).repeat_interleave(k), idx))
+    edges = torch.vstack((torch.arange(len(X)).repeat_interleave(k), idx))
+
+    return edges
+
+@singledispatch
+def knn2D(X, k=1, loop=True):
+    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
+    edges = np.zeros(2, len(X)*k, dtype=np.int32)
+
+    for i in range(len(np.unique(X[:, 0]))):
+        mask_i, mask_h = X[:, 0] == i, X[:, 0] == i - 1
+        end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
+        edges[:, start:end] = knn(X[mask_i], k) + m
+
+    return edges
+
+@knn2D.register(torch.Tensor)
+def _(X, k=1, loop=True):
+    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
+    edges = torch.zeros(2, len(X)*k, dtype=torch.int32)
+
+    for i in range(len(X[:, 0].unique())):
+        mask_i, mask_h = X[:, 0] == i, X[:, 0] == i - 1
+        end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
+        edges[:, start:end] = knn(X[mask_i], k) + m
 
     return edges
 

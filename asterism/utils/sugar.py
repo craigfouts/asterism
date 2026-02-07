@@ -18,11 +18,12 @@ __all__ = [
 def attrmethod(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        method_kwargs = dict(getcallargs(method, self, *args, **kwargs))
+        method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
         del method_kwargs['self']
 
         for key, val in method_kwargs.items():
-            setattr(self, key, val)
+            if val is not None or not hasattr(self, key):
+                setattr(self, key, val)
 
         return method(self, *args, **kwargs)
     return wrapper
@@ -32,11 +33,14 @@ def _(prefix='', suffix=''):
     def decorator(method):
         @wraps(method)
         def wrapper(self, *args, **kwargs):
-            method_kwargs = dict(getcallargs(method, self, *args, **kwargs))
+            method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
             del method_kwargs['self']
 
             for key, val in method_kwargs.items():
-                setattr(self, prefix + key + suffix, val)
+                key = prefix + key + suffix
+
+                if val is not None or not hasattr(self, key):
+                    setattr(self, key, val)
 
             return method(self, *args, **kwargs)
         return wrapper
@@ -54,16 +58,17 @@ def buildmethod(method):
         return method(self, *args, **kwargs)
     return wrapper
 
-@buildmethod.register(str)  # FIXME
-def _(builder='_build'):
+@buildmethod.register(str)
+def _(*builders):
     def decorator(method):
         @wraps(method)
         def wrapper(self, *args, **kwargs):
-            if hasattr(self, builder):
-                build = getattr(self, builder)
-                method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
-                build_kwargs = get_kwargs(build, **method_kwargs)
-                build(**build_kwargs)
+            for builder in builders:
+                if hasattr(self, builder):
+                    build = getattr(self, builder)
+                    method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
+                    build_kwargs = get_kwargs(build, **method_kwargs)
+                    build(**build_kwargs)
 
             return method(self, *args, **kwargs)
         return wrapper

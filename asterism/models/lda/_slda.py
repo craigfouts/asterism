@@ -13,6 +13,7 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 from ...core import AsterismSpatial
 from ...utils import normalize, relabel
+from ...utils.sugar import buildmethod
 
 __all__ = [
     'GibbsSLDA'
@@ -68,9 +69,7 @@ class GibbsSLDA(AsterismSpatial):
 
         return data
 
-    # TODO: wrapper to handle locs shape + build wrappers for ^
     def _build(self, X, locs):
-        self._locs = np.concat([np.zeros([locs.shape[0], 3 - locs.shape[1]]), locs], -1)
         n_docs, _ = len(self._build_docs(self._locs)), self._build_data(X, self._locs)
         self.words_ = KMeans(self.vocab_size, random_state=self._state).fit_predict(self._data)
         self.docs_, self.topics_ = np.zeros((2, self._n_steps, n_samples := len(X)), dtype=np.int32)

@@ -6,6 +6,7 @@ License: Apache 2.0 license
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from functools import singledispatch
 from inspect import signature
 from scipy.optimize import linear_sum_assignment
@@ -25,6 +26,7 @@ __all__ = [
     'knn',
     'log_normalize',
     'normalize',
+    'pad',
     'relabel',
     'shuffle',
     'to_list',
@@ -105,6 +107,18 @@ def torch_random_state(seed=None):
     if isinstance(seed, Generator):
         return seed
     return Generator().manual_seed(seed)
+
+@singledispatch
+def pad(X, pad):
+    out = np.pad(X, pad)
+
+    return out
+
+@pad.register(torch.Tensor)
+def _(X, pad):
+    out = F.pad(X, pad)
+
+    return out
 
 @singledispatch
 def relabel(labels, target=None):

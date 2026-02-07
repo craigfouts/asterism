@@ -4,11 +4,14 @@ Correspondence: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
 '''
 
+import numpy as np
+import torch
+import torch.nn.functional as F
 from abc import ABCMeta, abstractmethod
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_random_state
 from tqdm import tqdm
-from ..utils import get_kwargs, relabel, torch_random_state
+from ..utils import get_kwargs, pad, relabel, torch_random_state
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [
@@ -31,12 +34,6 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         topics = relabel(self._predict(**predict_kwargs), y)
 
         return topics
-    
-    def _setup(self, n_steps=None):
-        if n_steps is not None:
-            self._n_steps = n_steps
-
-        return self
 
     @abstractmethod
     def _step(self):
@@ -55,15 +52,18 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
         print(msg)
 
+    def _setup(self, n_steps=None):
+        if n_steps is not None:
+            self._n_steps = n_steps
+
+        return self
+
     @checkmethod
     @buildmethod('_setup', '_build')
     def fit(self, X, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)
         self.log_ = []
-
-        if n_steps is not None:
-            self._n_steps = n_steps
 
         for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
             self.log_.append(self._step(**step_kwargs))
@@ -75,16 +75,19 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
         return self
 
-class AsterismSpatial(Asterism):   
+class AsterismSpatial(Asterism):
+    def _setup(self, locs, n_steps=None):
+        super()._setup(n_steps)
+        self._locs = pad(locs, ((n := 3 - locs.shape[1])*(n > 0), 0))
+
+        return self
+
     @checkmethod
     @buildmethod('_setup', '_build')
     def fit(self, X, locs, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)
         self.log_ = []
-
-        if n_steps is not None:
-            self._n_steps = n_steps
 
         for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
             self.log_.append(self._step(**step_kwargs))

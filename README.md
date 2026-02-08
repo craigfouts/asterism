@@ -1,6 +1,6 @@
 Asterism - Experiments with Point Cloud Clustering
 ==================================================
-Implementations of semantic segmentation algorithms and dimension reduction models applied to point cloud data. Methods include variations of latent Dirichlet allocation, some amortized topic models, and a neural clustering process. Also a test bed for ATLAS, an adaptable topic model for discovering latent anatomical structures.
+Semantic segmentation models and dimension reduction algorithms applied to point cloud data. Current methods include variations of latent Dirichlet allocation, some amortized topic models, and a neural clustering process. Also a test bed for ATLAS, a nonparametric topic model for discovering spatial structures.
 
 Python version: 3.14
 

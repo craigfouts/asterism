@@ -7,34 +7,23 @@ License: Apache 2.0 license
 #define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
+#include <arrayobject.h>
 
-int _fib(int n) {
-    return n < 2 ? n : _fib(n - 1) + _fib(n - 2);
+float _cdist(float x1, float x2) {
+    return x1 - x2;
 }
 
-static PyObject *hello(PyObject *self, PyObject *args) {
-    const char *name;
+static PyObject *cdist(PyObject *self, PyObject *args) {
+    float x1, x2;
 
-    if (!PyArg_ParseTuple(args, "s", &name))
+    if (!PyArg_ParseTuple(args, "ff", &x1, &x2))
         return NULL;
 
-    printf("Hello, %s!", name);
-
-    return Py_None;
-}
-
-static PyObject *fib(PyObject *self, PyObject *args) {
-    int n;
-
-    if (!PyArg_ParseTuple(args, "i", &n))
-        return NULL;
-
-    return Py_BuildValue("i", _fib(n));
+    return Py_BuildValue("f", _cdist(x1, x2));
 }
 
 static PyMethodDef methods[] = {
-    {"hello", hello, METH_VARARGS, "hello"},
-    {"fib", fib, METH_VARARGS, "fib"},
+    {"cdist", cdist, METH_VARARGS, "cdist"},
     {NULL, NULL, 0, NULL}
 };
 
@@ -46,5 +35,6 @@ static struct PyModuleDef module = {
 };
 
 PyMODINIT_FUNC PyInit__utils_(void) {
+    import_array();
     return PyModule_Create(&module);
 }

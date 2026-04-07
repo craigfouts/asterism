@@ -16,11 +16,11 @@ from sklearn.metrics import confusion_matrix
 from sklearn.utils import check_array, check_random_state
 from torch import Generator
 from tqdm import tqdm
-from . import _utils_
+# from . import _utils_
 
 __all__ = [
+    'cdist',
     'check_data',
-    'fib',
     'hello',
     'kmeans',
     'knn',
@@ -35,8 +35,7 @@ __all__ = [
     'torch_random_state'
 ]
 
-fib = _utils_.fib
-hello = _utils_.hello
+# cdist = _utils_.cdist
 
 @singledispatch
 def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):

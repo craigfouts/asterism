@@ -5,21 +5,19 @@ License: Apache 2.0 license
 '''
 
 import numpy as np
-from scipy import stats
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
-from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.cluster import KMeans
-from tqdm import tqdm
 from ...core import AsterismSpatial
-from ...utils import normalize, relabel
-from ...utils.sugar import buildmethod
+from ...utils import normalize
+from ...utils.sugar import attrmethod
 
 __all__ = [
     'GibbsSLDA'
 ]
 
 class GibbsSLDA(AsterismSpatial):
+    @attrmethod
     def __init__(self, n_topics=3, *, n_docs=None, doc_size=4, data_size=4, vocab_size=32, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
         super().__init__(desc, seed)
 
@@ -31,13 +29,13 @@ class GibbsSLDA(AsterismSpatial):
         self.dt_prior = dt_prior
         self.tw_prior = tw_prior
 
-        self._n_steps = 100  # FIXME
+        self._n_steps = 200  # FIXME
 
     def _build_docs(self, locs, in_place=True):
         sections, docs = np.unique(locs[:, 0]), []    
 
         for s in sections:
-            n_samples = (s_mask := locs[:, 0] == s).sum()
+            n_samples = int((s_mask := locs[:, 0] == s).sum())
             s_docs = self.n_docs if self.n_docs is not None else n_samples//4
             s_idx = self._state.permutation(n_samples)[:s_docs]
             s_locs = (d_locs := locs[s_mask, :3][s_idx])[:, -2:]

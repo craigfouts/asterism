@@ -19,7 +19,7 @@ __all__ = [
 
 class ATLAS(AsterismSpatial, nn.Module):
     @attrmethod
-    def __init__(self, min_topics=1, *, channels=(128, 32), doc_size=8, topic_rate=.2, kld_scale=.1, optim='adam', desc='ATLAS', seed=None):
+    def __init__(self, min_topics=1, *, channels=(128, 32), doc_size=8, topic_rate=.1, kld_scale=.1, optim='adam', desc='ATLAS', seed=None):
         super().__init__(desc, seed, torch_state=True)
 
         self._channels = (channels,) if isinstance(channels, int) else channels
@@ -29,7 +29,7 @@ class ATLAS(AsterismSpatial, nn.Module):
 
     def _build(self, X, locs, learning_rate=1e-2, batch_size=32, shuffle=True):
         if batch_size == -1:
-            batch_size = X.shape[0]
+            batch_size = len(X)
 
         self._X = SimpleConv(aggr='mean')(X, knn2D(locs, self.doc_size))
         self._loader = DataLoader(self._X, batch_size, shuffle)
@@ -42,8 +42,8 @@ class ATLAS(AsterismSpatial, nn.Module):
 
         return self
     
-    def _generate(self, Z=None, n_topics=None):
-        if n_topics is None:
+    def _generate(self, Z=None, n_topics=-1):
+        if n_topics == -1:
             n_topics = self.n_topics_
 
         weights = self._decoder(self._tw_rnn(n_layers=n_topics + 1))
@@ -58,13 +58,13 @@ class ATLAS(AsterismSpatial, nn.Module):
         Z, kld = self._encoder(X, return_kld=True)
         X_k, _ = self._generate(Z, self.n_topics_ - 1)
         X_K, weights = self._generate(Z)
-        loss_k = (X_k - X).square().sum(-1)/(n := len(X))
+        loss_k = (X_k - X).square().sum(1)/(n := len(X))
         loss_K = (X_K - X).square().sum(-1)/n
         loss = loss_K.sum().sqrt() + self.kld_scale*kld
+        n_used = len((X@weights.T).argmax(-1).unique())
+        increase = (loss_k - loss_K).sum()/loss_K.sum()
 
-        if len((X@weights.T).argmax(-1).unique()) < self.n_topics_:
-            self.n_topics_ -= 1
-        elif (loss_k - loss_K).sum()/loss_K.sum() < self.topic_rate:
+        if (self.n_topics_ <= n_used) and (self.topic_rate < increase):
             self.n_topics_ += 1
 
         return loss
@@ -83,8 +83,8 @@ class ATLAS(AsterismSpatial, nn.Module):
 
         return loss
     
-    def _predict(self, X, locs, eval=True):
-        if eval:
+    def _predict(self, X, locs, train=False):
+        if not train:
             self.eval()
 
         weights = self._X@self._generate().T

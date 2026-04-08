@@ -10,11 +10,10 @@ from torch.nn import functional as F
 __all__ = [
     'ACTS',
     'NORMS',
-    'OPTIMS',
-    'Dirichlet'
+    'OPTIMS'
 ]
 
-class Dirichlet(nn.Module):
+class _Dirichlet(nn.Module):
     def forward(self, X, sigmoid=True):
         if sigmoid:
             X = F.sigmoid(X)
@@ -24,6 +23,6 @@ class Dirichlet(nn.Module):
 
         return weights
 
-ACTS = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax, 'dirichlet': Dirichlet}
+ACTS = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax, 'dirichlet': _Dirichlet}
 NORMS = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}
 OPTIMS = {'adam': optim.Adam, 'sgd': optim.SGD}

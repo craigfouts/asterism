@@ -1,15 +1,15 @@
 '''
-Author(s): Craig Fouts
-Correspondence: c.fouts25@imperial.ac.uk
+Authors: Craig Fouts
+Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
 '''
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-from ...core import buildmethod, Asterism
+from ...base import buildmethod, Asterism, MLP
 from ...utils import log_normalize, shuffle
-from ...utils.nets import OPTIMS, MLP
+from ...utils.nets import OPTIMS
 from ...utils.sugar import attrmethod
 
 __all__ = [

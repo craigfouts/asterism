@@ -1,6 +1,6 @@
 '''
-Author(s): Craig Fouts
-Correspondence: c.fouts25@imperial.ac.uk
+Authors: Craig Fouts
+Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
 '''
 
@@ -14,7 +14,7 @@ from pyro.optim import Adam
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from sklearn.cluster import KMeans
-from ...core import Asterism
+from ...base import Asterism
 from ...utils import kmeans, normalize
 from ...utils.sugar import attrmethod
 
@@ -25,7 +25,7 @@ __all__ = [
 
 class GibbsLDA(Asterism):
     @attrmethod
-    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
+    def __init__(self, n_topics, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
         super().__init__(desc, seed)
 
         self._n_steps = 100
@@ -96,7 +96,7 @@ class GibbsLDA(Asterism):
         return topics
 
 class PyroLDA(Asterism):
-    def __init__(self, n_topics=3, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA', seed=None):
+    def __init__(self, n_topics, *, doc_size=32, vocab_size=32, dt_prior=1., tw_prior=1., optim='adam', desc='LDA', seed=None):
         pyro.clear_param_store()
         super().__init__(desc, seed, torch_state=True)
 

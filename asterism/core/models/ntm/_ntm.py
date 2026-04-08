@@ -1,13 +1,13 @@
 '''
-Author(s): Craig Fouts
-Correspondence: c.fouts25@imperial.ac.uk
+Authors: Craig Fouts
+Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
 '''
 
 from torch import nn
 from torch.utils.data import DataLoader
-from ...core import Asterism
-from ...utils.nets import OPTIMS, Encoder, MLP
+from ...base import OPTIMS, Asterism, Encoder, MLP
+from ...utils.nets import OPTIMS
 from ...utils.sugar import attrmethod
 
 __all__ = [

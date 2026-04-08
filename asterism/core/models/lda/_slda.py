@@ -1,6 +1,6 @@
 '''
-Author(s): Craig Fouts
-Correspondence: c.fouts25@imperial.ac.uk
+Authors: Craig Fouts
+Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
 '''
 
@@ -8,7 +8,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from sklearn.cluster import KMeans
-from ...core import AsterismSpatial
+from ...base import AsterismSpatial
 from ...utils import normalize
 from ...utils.sugar import attrmethod
 
@@ -18,7 +18,7 @@ __all__ = [
 
 class GibbsSLDA(AsterismSpatial):
     @attrmethod
-    def __init__(self, n_topics=3, *, n_docs=None, doc_size=4, data_size=4, vocab_size=32, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
+    def __init__(self, n_topics, *, n_docs=None, doc_size=4, data_size=4, vocab_size=32, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
         super().__init__(desc, seed)
 
         self.n_topics = n_topics

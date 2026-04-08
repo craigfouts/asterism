@@ -5,4 +5,4 @@ License: Apache 2.0 license
 '''
 
 from .base import *
-from .core import models
+from .core import *

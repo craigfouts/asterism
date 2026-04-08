@@ -14,10 +14,6 @@ __all__ = [
     'Dirichlet'
 ]
 
-ACTS = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax, 'dirichlet': Dirichlet}
-NORMS = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}
-OPTIMS = {'adam': optim.Adam, 'sgd': optim.SGD}
-
 class Dirichlet(nn.Module):
     def forward(self, X, sigmoid=True):
         if sigmoid:
@@ -27,3 +23,7 @@ class Dirichlet(nn.Module):
         weights = F.pad(X, (0, 1), value=1)*products
 
         return weights
+
+ACTS = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax, 'dirichlet': Dirichlet}
+NORMS = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}
+OPTIMS = {'adam': optim.Adam, 'sgd': optim.SGD}

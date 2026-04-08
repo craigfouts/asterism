@@ -10,7 +10,7 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from ..utils import get_kwargs, torch_random_state
-from ..utils.nets import ACTS, NORMS, Dirichlet
+from ..utils.nets import ACTS, NORMS
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [

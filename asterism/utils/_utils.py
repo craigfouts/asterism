@@ -21,7 +21,7 @@ from tqdm import tqdm
 __all__ = [
     'cdist',
     'check_data',
-    'hello',
+    'get_kwargs',
     'kmeans',
     'knn',
     'knn2D',

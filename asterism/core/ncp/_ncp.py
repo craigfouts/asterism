@@ -7,10 +7,10 @@ License: Apache 2.0 license
 import torch
 from torch import nn
 from torch.nn import functional as F
-from ...base import buildmethod, Asterism, MLP
+from ...base import Asterism, MLP
 from ...utils import log_normalize, shuffle
 from ...utils.nets import OPTIMS
-from ...utils.sugar import attrmethod
+from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
     'split',

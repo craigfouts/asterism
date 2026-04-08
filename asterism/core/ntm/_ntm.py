@@ -6,7 +6,7 @@ License: Apache 2.0 license
 
 from torch import nn
 from torch.utils.data import DataLoader
-from ...base import OPTIMS, Asterism, Encoder, MLP
+from ...base import Asterism, Encoder, MLP
 from ...utils.nets import OPTIMS
 from ...utils.sugar import attrmethod
 

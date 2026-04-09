@@ -10,7 +10,7 @@ from scipy.stats import mode
 from sklearn.cluster import KMeans
 from ...base import AsterismSpatial
 from ...utils import normalize
-from ...utils.sugar import attrmethod
+from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
     'GibbsSLDA'
@@ -67,11 +67,11 @@ class GibbsSLDA(AsterismSpatial):
 
         return data
 
+    @buildmethod('_build_docs', '_build_data')
     def _build(self, X, locs):
-        n_docs, _ = len(self._build_docs(self._locs)), self._build_data(X, self._locs)
         self.words_ = KMeans(self.vocab_size, random_state=self._state).fit_predict(self._data)
         self.docs_, self.topics_ = np.zeros((2, self._n_steps, n_samples := len(X)), dtype=np.int32)
-        self.docs_[-1:] = self._state.choice(n_docs, n_samples)
+        self.docs_[-1:] = self._state.choice(n_docs := len(self._docs), n_samples)
         self.topics_[-1:] = self._state.choice(self.n_topics, n_samples)
         doc_range, topic_range = np.arange(n_docs)[:, None], np.arange(self.n_topics)[:, None]
         self.dt_post_ = (self.docs_[-1] == doc_range)@np.eye(self.n_topics)[self.topics_[-1]]

@@ -6,7 +6,7 @@ License: Apache 2.0 license
 
 import torch
 from sklearn.base import BaseEstimator, TransformerMixin
-from torch import nn, optim
+from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from ..utils import get_kwargs, torch_random_state

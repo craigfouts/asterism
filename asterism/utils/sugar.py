@@ -18,7 +18,7 @@ __all__ = [
 def attrmethod(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
+        method_kwargs = dict(getcallargs(method, self, *args, **kwargs), **kwargs)
         del method_kwargs['self']
 
         for key, val in method_kwargs.items():
@@ -33,7 +33,7 @@ def _(prefix='', suffix=''):
     def decorator(method):
         @wraps(method)
         def wrapper(self, *args, **kwargs):
-            method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
+            method_kwargs = dict(getcallargs(method, self, *args, **kwargs), **kwargs)
             del method_kwargs['self']
 
             for key, val in method_kwargs.items():
@@ -51,7 +51,7 @@ def buildmethod(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         if hasattr(self, '_build'):
-            method_kwargs = dict(getcallargs(method, self, *args), **kwargs)
+            method_kwargs = dict(getcallargs(method, self, *args, **kwargs), **kwargs)
             build_kwargs = get_kwargs(self._build, **method_kwargs)
             self._build(**build_kwargs)
 

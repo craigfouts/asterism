@@ -21,14 +21,6 @@ class GibbsSLDA(AsterismSpatial):
     def __init__(self, n_topics, *, n_docs=None, doc_size=4, data_size=4, vocab_size=32, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
         super().__init__(desc, seed)
 
-        self.n_topics = n_topics
-        self.n_docs = n_docs
-        self.doc_size = doc_size
-        self.data_size = data_size
-        self.vocab_size = vocab_size
-        self.dt_prior = dt_prior
-        self.tw_prior = tw_prior
-
         self._n_steps = 200  # FIXME
 
     def _build_docs(self, locs, in_place=True):
@@ -38,9 +30,9 @@ class GibbsSLDA(AsterismSpatial):
             n_samples = int((s_mask := locs[:, 0] == s).sum())
             s_docs = self.n_docs if self.n_docs is not None else n_samples//4
             s_idx = self._state.permutation(n_samples)[:s_docs]
-            s_locs = (d_locs := locs[s_mask, :3][s_idx])[:, -2:]
-            s_cdists = cdist(s_locs, s_locs, 'sqeuclidean')
-            s_vars = np.sort(s_cdists, -1)[:, self.doc_size]
+            s_locs = (d_locs := locs[s_mask, :3][s_idx])[:, 1:]
+            s_dists = cdist(s_locs, s_locs, 'sqeuclidean')
+            s_vars = np.sort(s_dists, -1)[:, self.doc_size]
             docs.append(np.concat([d_locs, s_vars[:, None]], -1))
         
         docs = np.concat(docs, 0)
@@ -54,11 +46,11 @@ class GibbsSLDA(AsterismSpatial):
         sections, data = np.unique(locs[:, 0]), []
 
         for s in sections:
-            s_locs = locs[s_mask := locs[:, 0] == s, -2:]
-            s_cdists = cdist(s_locs, s_locs, 'sqeuclidean')
-            s_vars = np.sort(s_cdists, -1)[:, self.data_size]
-            gauss = np.exp(-s_cdists/(2*s_vars))/(np.sqrt(2*np.pi*s_vars))
-            data.append(gauss@X[s_mask])
+            s_locs = locs[s_mask := locs[:, 0] == s, 1:3]
+            s_dists = cdist(s_locs, s_locs, 'sqeuclidean')
+            s_vars = np.sort(s_dists, -1)[:, self.data_size]
+            s_conv = np.exp(-s_dists/(2*s_vars))/(np.sqrt(2*np.pi*s_vars))
+            data.append(s_conv@X[s_mask])
 
         data = np.concat(data, 0)
 

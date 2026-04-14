@@ -19,7 +19,7 @@ from tqdm import tqdm
 # from . import _utils_
 
 __all__ = [
-    'cdist',
+    # 'cdist',
     'check_data',
     'get_kwargs',
     'kmeans',
@@ -222,7 +222,7 @@ def knn2D(X, k=1, loop=True):
     edges = np.zeros(2, len(X)*k, dtype=np.int32)
 
     for i in range(len(np.unique(X[:, 0]))):
-        mask_i, mask_h = X[:, 0] == i, X[:, 0] == i - 1
+        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
         end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
         edges[:, start:end] = knn(X[mask_i], k) + m
 
@@ -234,7 +234,7 @@ def _(X, k=1, loop=True):
     edges = torch.zeros(2, len(X)*k, dtype=torch.int32)
 
     for i in range(len(X[:, 0].unique())):
-        mask_i, mask_h = X[:, 0] == i, X[:, 0] == i - 1
+        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
         end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
         edges[:, start:end] = knn(X[mask_i], k) + m
 

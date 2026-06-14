@@ -5,6 +5,7 @@ License: Apache 2.0 license
 '''
 
 import numpy as np
+import re
 import torch
 import torch.nn.functional as F
 from functools import singledispatch
@@ -22,12 +23,14 @@ __all__ = [
     # 'cdist',
     'check_data',
     'get_kwargs',
+    'get_methods',
     'kmeans',
     'knn',
     'knn2D',
     'log_normalize',
     'normalize',
     'pad',
+    'random_state',
     'relabel',
     'shuffle',
     'to_list',
@@ -66,6 +69,15 @@ def _(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, d
         raise ValueError('Complex data not supported.')
     
     return X
+
+def get_methods(cls, prefix='', suffix='', return_callable=False):
+    methods = []
+
+    for attr in dir(cls):
+        if callable(method := getattr(cls, attr)) and re.search(f'^{prefix}.*{suffix}$', attr):
+            methods.append(method if return_callable else attr)
+
+    return methods
 
 def get_kwargs(*functions, **kwargs):
     function_kwargs = []
@@ -107,6 +119,11 @@ def torch_random_state(seed=None):
     if isinstance(seed, Generator):
         return seed
     return Generator().manual_seed(seed)
+
+def random_state(seed=None, torch_state=False):
+    if torch_state:
+        return torch_random_state(seed)
+    return check_random_state(seed)
 
 @singledispatch
 def pad(X, pad):
@@ -161,7 +178,7 @@ def shuffle(data, labels=None, sort=False, cut=None):
     return data
 
 @singledispatch
-def kmeans(data, k=5, n_steps=100, n_perms=50, desc='KMeans', verbosity=0, seed=None):
+def kmeans(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):
     state, k_range = check_random_state(seed), np.arange(k)
     labels = np.zeros((n_perms, n_samples := len(data)), dtype=np.int32)
 
@@ -181,7 +198,7 @@ def kmeans(data, k=5, n_steps=100, n_perms=50, desc='KMeans', verbosity=0, seed=
     return labels
 
 @kmeans.register(torch.Tensor)
-def _(data, k=5, n_steps=100, n_perms=50, desc='KMeans', verbosity=0, seed=None):
+def _(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):
     state, k_range = torch_random_state(seed), np.arange(k)
     labels = torch.zeros((n_perms, n_samples := len(data)), dtype=torch.int32)
 

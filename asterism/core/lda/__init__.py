@@ -5,8 +5,4 @@ License: Apache 2.0 license
 '''
 
 from ._lda import *
-from ._slda import *
-
-__all__ = [
-    'GibbsLDA'
-]
+# from ._slda import *

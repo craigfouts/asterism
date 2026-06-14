@@ -4,36 +4,33 @@ Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
 '''
 
-import numpy as np
 import torch
-import torch.nn.functional as F
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod, ABCMeta
 from sklearn.base import BaseEstimator, ClusterMixin
-from sklearn.utils import check_random_state
 from tqdm import tqdm
-from ..utils import get_kwargs, pad, relabel, torch_random_state
+from ..utils import get_kwargs, pad, random_state, relabel
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [
-    'Asterism',
-    'AsterismSpatial'
+    'Asterism'
 ]
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     @attrmethod
-    def __init__(self, desc=None, seed=None, *, torch_state=False, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
-        super().__init__()
+    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparce=False, ensure_all_finite=True, **kwargs):
+        super().__init__(**kwargs)
 
-        self._state = torch_random_state(seed) if torch_state else check_random_state(seed)
-        self._n_steps = 100
+        self._state = None
+        self._n_steps = 200
         self._step_n = 0
 
+    @buildmethod('_setup')
     def __call__(self, X, y=None, **kwargs):
-        call_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
-        predict_kwargs = get_kwargs(self._predict, **call_kwargs)
-        topics = relabel(self._predict(**predict_kwargs), y)
-
-        return topics
+        local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
+        predict_kwargs = get_kwargs(self._predict, **local_kwargs)
+        labels = relabel(self._predict(**predict_kwargs), y)
+        
+        return labels
 
     @abstractmethod
     def _step(self):
@@ -43,26 +40,33 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     def _predict(self):
         pass
 
-    def _display(self):
-        desc = self.desc + '  ' if self.desc is not None else ''
-        msg = f'{desc}step: {self._step_n}'
+    def _display(self, label='score'):
+        desc = self.desc + ':  ' if self.desc is not None else ''
+        msg = f'{desc}step={self._step_n}  {label}={self.log_[-1]}'
 
-        if hasattr(self, 'log_') and len(self.log_) > 0:
-            msg += f'  score: {self.log_[-1]}'
+        for k, v in self.logs_.items():
+            if len(v) > 0:
+                msg += f'  {k[:-5]}: {v[-1]}'
 
         print(msg)
 
-    def _setup(self, n_steps=None):
+    def _setup(self, X, locs=None, n_steps=None):
+        self.logs_ = {k: v for k, v in self.__dict__.items() if k.endswith('log_')}
+
+        if self._state is None:
+            self._state = random_state(self.seed, isinstance(X, torch.Tensor))
+
+        if locs is not None:
+            self._locs = pad(locs, ((n := 3 - locs.shape[1])*(n > 0), 0))
+
         if n_steps is not None:
             self._n_steps = n_steps
 
-        return self
-
     @checkmethod
     @buildmethod('_setup', '_build')
-    def fit(self, X, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
-        fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
-        step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)
+    def fit(self, X, y=None, locs=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
+        local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
+        step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **local_kwargs)
         self.log_ = []
 
         for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
@@ -74,32 +78,3 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         self.labels_ = relabel(self._predict(**predict_kwargs), y)
 
         return self
-
-class AsterismSpatial(Asterism):
-    def _setup(self, locs, n_steps=None):
-        super()._setup(n_steps)
-        self._locs = pad(locs, ((n := 3 - locs.shape[1])*(n > 0), 0))
-
-        return self
-
-    @checkmethod
-    @buildmethod('_setup', '_build')
-    def fit(self, X, locs, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
-        fit_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
-        step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **fit_kwargs)
-        self.log_ = []
-
-        for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
-            self.log_.append(self._step(**step_kwargs))
-
-            if verbosity == 2 and self._step_n%display_rate == 0:
-                self._display(**display_kwargs)
-
-        self.labels_ = relabel(self._predict(**predict_kwargs), y)
-
-        return self
-
-    def fit_predict(self, X, locs, y=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
-        self.fit(X, locs, y, n_steps, verbosity, display_rate, **kwargs)
-
-        return self.labels_

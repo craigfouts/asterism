@@ -33,6 +33,7 @@ __all__ = [
     'random_state',
     'relabel',
     'shuffle',
+    'batch_split',
     'to_list',
     'to_tensor',
     'torch_random_state'
@@ -176,6 +177,38 @@ def shuffle(data, labels=None, sort=False, cut=None):
 
         return data, labels
     return data
+
+@singledispatch
+def batch_split(x, y, imgs=None, n_test=1):
+    if imgs is None:
+        return x[None], y[None]
+
+    if imgs.ndim > 1:
+        imgs = imgs[:, 0]
+
+    n_train = np.unique(imgs).shape[0] - n_test
+    train_size = x.shape[0] - (test_size := (imgs >= n_train).sum())
+    x_train = x[:train_size].reshape((n_train, train_size//n_train, x.shape[-1]))
+    x_test = x[train_size:].reshape((n_test, test_size//n_test, x.shape[-1]))
+    y_train, y_test = y[:train_size], y[train_size:]
+
+    return x_train, y_train, x_test, y_test
+
+@batch_split.register(torch.Tensor)
+def _(x, y, imgs=None, n_test=1):
+    if imgs is None:
+        return x[None], y[None]
+    
+    if imgs.ndim > 1:
+        imgs = imgs[:, 0]
+
+    n_train = imgs.unique().shape[0] - n_test
+    train_size = x.shape[0] - (test_size := (imgs >= n_train).sum())
+    x_train = x[:train_size].view([n_train, train_size//n_train, x.shape[-1]])
+    x_test = x[train_size:].view([n_test, test_size//n_test, x.shape[-1]])
+    y_train, y_test = y[:train_size], y[train_size:]
+
+    return x_train, y_train, x_test, y_test
 
 @singledispatch
 def kmeans(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):

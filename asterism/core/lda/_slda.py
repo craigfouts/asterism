@@ -13,12 +13,12 @@ from ...utils import kmeans, normalize
 from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
-    'GibbsSLDA'
+    'GibbsSLDA'  # Line 19
 ]
 
 class GibbsSLDA(Asterism):
     @attrmethod
-    def __init__(self, n_topics, *, n_docs=-8, doc_size=4., word_size=4., vocab_size=16, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
+    def __init__(self, n_topics, *, n_docs=-16, doc_size=6., word_size=6., vocab_size=16, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
         super().__init__(desc, seed)
 
         self._n_steps = 200
@@ -37,7 +37,7 @@ class GibbsSLDA(Asterism):
 
         self._docs = np.concat(docs, 0)
 
-    def _build_words(self, X, locs):
+    def _build_words(self, x, locs):
         imgs, words = np.unique(locs[:, 0]), []
 
         for img in imgs:
@@ -45,18 +45,22 @@ class GibbsSLDA(Asterism):
             img_prox = cdist(img_locs, img_locs, 'sqeuclidean')
             img_vars = self.doc_size*np.sort(img_prox, -1)[:, 1].mean()
             img_conv = np.exp(-img_prox/(2*img_vars))/(np.sqrt(2*np.pi*img_vars))
-            words.append(img_conv@X[img_mask])
+            words.append(img_conv@x[img_mask])
 
         self._words = np.concat(words, 0)
 
     @buildmethod
-    def _build(self, X, locs, burn_in=-2):
-        self._burn_in = self._n_steps//-burn_in if burn_in < 0 else burn_in
+    def _build(self, x, locs, burn_in=-2):
+        if burn_in < 0:
+            self._burn_in = self._n_steps//-burn_in
+        else:
+            self._burn_in = burn_in
+    
         self.words_ = kmeans(self._words, self.vocab_size, seed=self._state)
-        self.docs_, self.topics_ = np.zeros([2, self._n_steps, n_pts := X.shape[0]], dtype=np.int32)
-        self.docs_[-1:] = self._state.choice(n_docs := self._docs.shape[0], n_pts)
-        self.topics_[-1:] = self._state.choice(self.n_topics, n_pts)
-        doc_range, topic_range = np.arange(n_docs)[:, None], np.arange(self.n_topics)[:, None]
+        self.docs_, self.topics_ = np.zeros([2, self._n_steps, n := x.shape[0]], dtype=np.int32)
+        self.docs_[-1:] = self._state.choice(m := self._docs.shape[0], n)
+        self.topics_[-1:] = self._state.choice(self.n_topics, n)
+        doc_range, topic_range = np.arange(m)[:, None], np.arange(self.n_topics)[:, None]
         self.dt_post_ = (self.docs_[-1] == doc_range)@np.eye(self.n_topics)[self.topics_[-1]]
         self.tw_post_ = (self.topics_[-1] == topic_range)@np.eye(self.vocab_size)[self.words_]
 
@@ -97,7 +101,8 @@ class GibbsSLDA(Asterism):
         return topic, probs[topic]
 
     def _step(self):
-        perm, prob = self._state.permutation(self.words_.shape[0]), 0
+        perm = self._state.permutation(self.words_.shape[0])
+        llh = 0
 
         for idx in perm:
             loc, doc, topic, word = self._query(idx)
@@ -107,9 +112,9 @@ class GibbsSLDA(Asterism):
             self._increment(doc_, topic_, word)
             self.docs_[self._step_n, idx] = doc_
             self.topics_[self._step_n, idx] = topic_
-            prob += doc_prob + topic_prob
+            llh += doc_prob + topic_prob
 
-        return prob
+        return llh
 
     def _predict(self):
         topics = mode(self.topics_[self._burn_in:]).mode
@@ -119,12 +124,12 @@ class GibbsSLDA(Asterism):
     def _display(self):
         super()._display('likelihood')
 
-    def fit(self, X, locs, y=None, *args, **kwargs):
-        super().fit(X, y, locs, *args, **kwargs)
+    def fit(self, x, locs, y=None, *args, **kwargs):
+        super().fit(x, y, locs, *args, **kwargs)
 
         return self
 
-    def fit_predict(self, X, locs, y=None, *args, **kwargs):
-        super().fit(X, y, locs, *args, **kwargs)
+    def fit_predict(self, x, locs, y=None, *args, **kwargs):
+        super().fit(x, y, locs, *args, **kwargs)
 
         return self.labels_

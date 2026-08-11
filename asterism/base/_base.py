@@ -12,7 +12,7 @@ from ..utils import get_kwargs, pad, random_state, relabel
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [
-    'Asterism'
+    'Asterism'  # Line 18
 ]
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
@@ -24,8 +24,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         self._n_steps = 200
         self._step_n = 0
 
-    @buildmethod('_setup')
-    def __call__(self, X, y=None, **kwargs):
+    def __call__(self, x, y=None, **kwargs):
         local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         predict_kwargs = get_kwargs(self._predict, **local_kwargs)
         labels = relabel(self._predict(**predict_kwargs), y)
@@ -50,11 +49,11 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
         print(msg)
 
-    def _setup(self, X, locs=None, n_steps=None):
+    def _setup(self, x, locs=None, n_steps=None):
         self.logs_ = {k: v for k, v in self.__dict__.items() if k.endswith('log_')}
 
         if self._state is None:
-            self._state = random_state(self.seed, isinstance(X, torch.Tensor))
+            self._state = random_state(self.seed, isinstance(x, torch.Tensor))
 
         if locs is not None:
             self._locs = pad(locs, ((n := 3 - locs.shape[1])*(n > 0), 0))
@@ -64,7 +63,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
     @checkmethod
     @buildmethod('_setup', '_build')
-    def fit(self, X, y=None, locs=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
+    def fit(self, x, y=None, locs=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **local_kwargs)
         self.log_ = []

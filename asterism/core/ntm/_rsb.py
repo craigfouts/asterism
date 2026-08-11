@@ -7,72 +7,74 @@ License: Apache 2.0 license
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-from ...base import Asterism, Encoder, MLP, RNN
-from ...utils.nets import OPTIMS
+from ...base import Asterism
+from ...nets import OPTIMS, Encoder, MLP, RNN
 from ...utils.sugar import attrmethod
 
 __all__ = [
-    'RSB'
+    'RSB'  # 18
 ]
 
 class RSB(Asterism, nn.Module):
     @attrmethod
-    def __init__(self, min_topics=1, *, channels=(64, 32), topic_rate=.2, kld_scale=.1, optim='adam', desc='RSB', seed=None):
-        super().__init__(desc, seed, torch_state=True)
+    def __init__(self, min_topics=1, *, channels=(128, 32), topic_rate=8., kld_scale=.1, optim='adam', desc='RSB', seed=None):
+        super().__init__(desc, seed)
 
         self._channels = (channels,) if isinstance(channels, int) else channels
         self._n_steps = 1000
         self.n_topics_ = min_topics
         self.topic_log_ = []
 
-    def _build(self, X, learning_rate=1e-2, batch_size=32, shuffle=True):
-        if batch_size == -1:
-            batch_size = X.shape[0]
+    def _build(self, x, learn_rate=1e-2, batch_size=32, shuffle=True):
+        if batch_size < 0:
+            batch_size = x.shape[0]//-batch_size
 
-        self._loader = DataLoader(X, batch_size, shuffle, generator=self._state)
-        self._encoder = Encoder(in_channels := X.shape[1], *self._channels, act_layer='prelu', seed=self._state)
-        self._dt_rnn = RNN(out_channels := self._channels[-1], bias=False, act_layer='prelu', seed=self._state)
-        self._tw_rnn = RNN(out_channels, bias=False, act_layer='prelu', seed=self._state)
+        self._data, in_channels, out_channels = x, x.shape[-1], self._channels[-1]
+        self._loader = DataLoader(self._data, batch_size, shuffle, generator=self._state)
+        self._encoder = Encoder(in_channels, *self._channels, act='prelu', seed=self._state)
+        self._dt_net = RNN(out_channels, bias=False, act='prelu', seed=self._state)
+        self._tw_net = RNN(out_channels, bias=False, act='prelu', seed=self._state)
         self._decoder = MLP(out_channels, in_channels, final_bias=False)
-        self._optim = OPTIMS[self.optim](self.parameters(), lr=learning_rate)
+        self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
         self.train()
 
         return self
     
-    def _generate(self, Z=None, n_topics=None):
-        if n_topics is None:
+    def _generate(self, z=None, n_topics=-1):
+        if n_topics == -1:
             n_topics = self.n_topics_
 
-        weights = self._decoder(self._tw_rnn(n_layers=n_topics + 1))
+        w = self._decoder(self._tw_net(n_layers=n_topics))
 
-        if Z is not None:
-            X = F.softmax(Z@self._dt_rnn(n_layers=n_topics + 1).T, -1)@weights
+        if z is not None:
+            x = F.softmax(z@self._dt_net(n_layers=n_topics).T, -1)@w
 
-            return X, weights
-        return weights
+            return x, w
+        return w
     
-    def _evaluate(self, X, update=True):
-        Z, kld = self._encoder(X, return_kld=True)
-        X_k, _ = self._generate(Z, self.n_topics_ - 1)
-        X_K, weights = self._generate(Z)
-        loss_k = (X_k - X).square().sum(-1)/(n_samples := X.shape[0])
-        loss_K = (X_K - X).square().sum(-1)/n_samples
-
-        if self.n_topics_ > (X@weights.T).argmax(-1).unique().shape[0]:
-            self.n_topics_ -= 1
-        if update and (loss_k - loss_K).sum()/loss_K.sum() > self.topic_rate:
-            self.n_topics_ += 1
-
+    def _evaluate(self, x):
+        z, kld = self._encoder(x, return_kld=True)
+        x_k, w = self._generate(z)
+        x_K, _ = self._generate(z, self.n_topics_ + 1)
+        n_topics = (x@w.T).argmax(-1).unique().shape[0]
+        loss_k = (x_k - x).square().sum(-1)/(n := x.shape[0])
+        loss_K = (x_K - x).square().sum(-1)/n
         loss = loss_K.sum() + self.kld_scale*kld
+        rate = (loss_k - loss_K).sum()/loss_K.sum()
+
+        if n_topics < self.n_topics_:
+            self.n_topics_ -= 1
+        elif self.topic_rate > 0. and rate > 1./self.topic_rate:
+            self.n_topics_ += 1
 
         return loss
     
     def _step(self):
         loss = 0.
 
-        for X in self._loader:
-            (X_loss := self._evaluate(X)).backward()
-            loss += X_loss.item()
+        for x in self._loader:
+            (x_loss := self._evaluate(x)).backward()
+            loss += x_loss.item()
 
         self._optim.step()
         self._optim.zero_grad()
@@ -80,11 +82,13 @@ class RSB(Asterism, nn.Module):
 
         return loss
     
-    def _predict(self, X, eval=True):
-        if eval:
+    def _predict(self, train=False):
+        if train:
+            self.train()
+        else:
             self.eval()
 
-        weights = self._generate()
-        topics = (X@weights.T).argmax(-1).detach()
+        z = self._data@self._generate().T
+        topics = z.argmax(-1).detach()
 
         return topics

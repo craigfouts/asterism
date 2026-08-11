@@ -6,61 +6,65 @@ License: Apache 2.0 license
 
 from torch import nn
 from torch.utils.data import DataLoader
-from ...base import Asterism, Encoder, MLP
-from ...utils.nets import OPTIMS
+from ...base import Asterism
+from ...nets import OPTIMS, Encoder, MLP
 from ...utils.sugar import attrmethod
 
 __all__ = [
-    'NTM'
+    'NTM'  # Line 17
 ]
 
 class NTM(Asterism, nn.Module):
     @attrmethod
-    def __init__(self, max_topics=100, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', seed=None):
-        super().__init__(desc, seed, torch_state=True)
+    def __init__(self, n_topics, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', seed=None):
+        super().__init__(desc, seed)
 
         if mode not in ('softmax', 'dirichlet'):
             raise ValueError(f'Mode `{mode}` not supported.')
 
-        self._n_steps = 1000
+        self._n_steps = 2000
     
-    def _build(self, X, learning_rate=1e-2, batch_size=128, shuffle=True):
-        if batch_size == -1:
-            batch_size = X.shape[0]
+    def _build(self, x, learn_rate=1e-2, batch_size=32, shuffle=True):
+        if batch_size < 0:
+            batch_size = x.shape[0]//-batch_size
             
-        out_channels = self.max_topics - (self.mode == 'dirichlet')
-        self._loader = DataLoader(X, batch_size, shuffle, generator=self._state)
-        self._encoder = Encoder(in_channels := X.shape[1], *self.channels)
-        self._g_model = MLP(self.channels[-1], out_channels, final_act=self.mode, dim=-1)
-        self._decoder = MLP(self.max_topics, in_channels, final_bias=False)
-        self._optim = OPTIMS[self.optim](self.parameters(), lr=learning_rate)
+        self._data, in_channels = x, x.shape[-1]
+        out_channels = self.n_topics - (self.mode == 'dirichlet')
+        self._loader = DataLoader(self._data, batch_size, shuffle, generator=self._state)
+        self._encoder = Encoder(in_channels, *self.channels)
+        self._dt_net = MLP(self.channels[-1], out_channels, final_act=self.mode, dim=-1)
+        self._decoder = MLP(self.n_topics, in_channels, final_bias=False)
+        self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
         self.train()
 
         return self
     
-    def _evaluate(self, X):
-        Z, kld = self._encoder(X, return_kld=True)
-        X_ = self._decoder(self._g_model(Z))
-        loss = (X_ - X).square().sum()/X.shape[0] + self.kld_scale*kld
+    def _evaluate(self, x):
+        z, kld = self._encoder(x, return_kld=True)
+        x_ = self._decoder(self._dt_net(z))
+        loss = (x_ - x).square().sum()/x.shape[0] + self.kld_scale*kld
 
         return loss
     
     def _step(self):
         loss = 0.
 
-        for X in self._loader:
-            (X_loss := self._evaluate(X)).backward()
-            loss += X_loss.item()
+        for x in self._loader:
+            (x_loss := self._evaluate(x)).backward()
+            loss += x_loss.item()
 
         self._optim.step()
         self._optim.zero_grad()
 
         return loss
     
-    def _predict(self, X, eval=True):
-        if eval:
+    def _predict(self, train=False):
+        if train:
+            self.train()
+        else:
             self.eval()
 
-        topics = (X@self._decoder[0][0].weight).argmax(-1).detach()
+        z = self._data@self._decoder[0][0].weight
+        topics = z.argmax(-1).detach()
 
         return topics

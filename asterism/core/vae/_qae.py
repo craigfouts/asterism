@@ -11,23 +11,27 @@ from ...utils.nets import OPTIMS
 from ...utils.sugar import attrmethod
 
 __all__ = [
-    'VQAE'
+    'VQAE'  # Line 17
 ]
         
 class VQAE(Asterism, nn.Module):
     @attrmethod
-    def __init__(self, max_topics=100, *, channels=(128, 32), optim='adam', desc='VQAE', seed=None):
+    def __init__(self, n_topics, *, channels=(128, 32), optim='adam', desc='VQAE', seed=None):
         super().__init__(desc, seed)
 
+        self._channels = (channels,) if isinstance(channels, int) else channels
         self._n_steps = 100
         
-    def _build(self, X, learning_rate=1e-2, weight_decay=1e-2):
-        mask = torch.randperm(X.shape[0])[:self.max_topics]
-        out_channels = (self.channels,) if isinstance(self.channels, int) else self.channels
-        self._encoder = MLP(in_channels := X.shape[1], *out_channels, norm_layer='batch', act_layer='relu')
-        self._decoder = MLP(*out_channels[::-1], in_channels, norm_layer='batch', act_layer='relu')
-        self._codebook = nn.Parameter(self._encoder(X[mask]), requires_grad=True)
-        self._optim = OPTIMS[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    def _build(self, X, learn_rate=1e-2, weight_decay=1e-2, batch_size=32, shuffle=True):
+        if batch_size < 0:
+            batch_size = x.shape[0]//-batch_size
+
+        self._data, in_channels = x, x.shape[-1]
+        self._encoder = MLP(in_channels, *self._channels, norm='batch', act='relu', drop=.5, seed=self._state)
+        self._decoder = MLP(*self._channels[::-1], in_channels, norm='batch', act='relu', drop=.5, seed=self._state)
+        mask = torch.randperm(self._data.shape[0])[:self.n_topics]
+        self._codebook = nn.Parameter(self._encoder(self._data[mask]), requires_grad=True)
+        self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate, weight_decay=weight_decay)
         self.train()
 
         return self

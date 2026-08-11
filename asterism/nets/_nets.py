@@ -6,19 +6,36 @@ License: Apache 2.0 license
 
 import torch
 from sklearn.base import BaseEstimator, TransformerMixin
-from torch import nn
+from torch import nn, optim
+from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from ..utils import get_kwargs, torch_random_state
-from ..utils.nets import ACTS, NORMS, OPTIMS
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [
-    'Encoder',
-    'MLP',
-    'RNN',
-    'VAE'
+    'ACTS',     # Line 26
+    'NORMS',    # Line 27
+    'OPTIMS',   # Line 28
+    'MLP',      # Line 40
+    'RNN',      # Line 74
+    'Encoder',  # Line 95
+    'VAE'       # Line 118
 ]
+
+class _Dirichlet(nn.Module):
+    def forward(self, x, sigmoid=True):
+        if sigmoid:
+            x = F.sigmoid(x)
+
+        prods = F.pad((1 - x).cumprod(-1), (1, 0), value=1)
+        w = F.pad(x, (0, 1), value=1)*prods
+
+        return w
+
+ACTS = {'relu': nn.ReLU, 'prelu': nn.PReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh, 'softplus': nn.Softplus, 'softmax': nn.Softmax, 'dirichlet': _Dirichlet}
+NORMS = {'batch': nn.BatchNorm1d, 'layer': nn.LayerNorm}
+OPTIMS = {'adam': optim.Adam, 'sgd': optim.SGD}
 
 class MLP(nn.Sequential):
     @attrmethod
@@ -28,7 +45,7 @@ class MLP(nn.Sequential):
         for i in range(1, len(channels) - 1):
             modules.append(self.layer(channels[i - 1], channels[i], bias, norm, act, drop, **kwargs))
 
-        modules.append(self.layer(channels[-2%len(channels)], channels[1], final_bias, final_norm, final_act, final_drop, **kwargs))
+        modules.append(self.layer(channels[-2%len(channels)], channels[-1], final_bias, final_norm, final_act, final_drop, **kwargs))
         super().__init__(*modules)
 
     @staticmethod
@@ -40,11 +57,11 @@ class MLP(nn.Sequential):
         modules = [nn.Linear(in_channels, out_channels, bias)]
 
         if norm is not None:
-            norm_kwargs = get_kwargs(norm := NORMS[norm_layer], **layer_kwargs)
+            norm_kwargs = get_kwargs(norm := NORMS[norm], **layer_kwargs)
             modules.append(norm(out_channels, **norm_kwargs))
 
         if act is not None:
-            act_kwargs = get_kwargs(act := ACTS[act_layer], **layer_kwargs)
+            act_kwargs = get_kwargs(act := ACTS[act], **layer_kwargs)
             modules.append(act(**act_kwargs))
 
         if drop > 0.:
@@ -56,7 +73,7 @@ class MLP(nn.Sequential):
 
 class RNN(MLP):
     @attrmethod
-    def __init__(self, channels, bias=True, norm=None, act='tanh', drop=0., seed=None, init_zero=True, **kwargs):
+    def __init__(self, channels, bias=True, norm=None, act='tanh', drop=0., seed=None, init_zero=False, **kwargs):
         super().__init__(channels, final_bias=bias, final_norm=norm, final_act=act, final_drop=drop, **kwargs)
 
         self._state = torch_random_state(seed)
@@ -66,14 +83,14 @@ class RNN(MLP):
         else:
             self._init = torch.rand(1, channels, generator=self._state)
 
-    def forward(self, X=None, n_layers=2):
-        if X is None:
-            X = self._init
+    def forward(self, x=None, n_layers=1):
+        if x is None:
+            x = self._init
 
-        for i in range(1, n_layers):
-            Z = torch.cat((X, super().forward(X[i - 1:i])))
+        for i in range(n_layers):
+            x = torch.cat((x, super().forward(x[i - 1:i])))
 
-        return Z
+        return x
 
 class Encoder(nn.Module):
     @attrmethod
@@ -86,17 +103,17 @@ class Encoder(nn.Module):
         self._m_mlp = MLP(*self._channels[-2:], final_bias=bias, final_norm=norm, **kwargs)
         self._s_mlp = MLP(*self._channels[-2:], final_bias=bias, **kwargs)
 
-    def forward(self, X, return_kld=False):
-        Q = self._q_net(X)
-        M, S_log = self._m_mlp(Q), self._s_mlp(Q)
-        S_exp = (.5*S_log).exp()
-        Z = M + S_exp*torch.randn(M.shape, generator=self._state)
+    def forward(self, x, return_kld=False):
+        q = self._q_net(x)
+        m, s_log = self._m_mlp(q), self._s_mlp(q)
+        s = (.5*s_log).exp()
+        z = m + s*torch.randn(m.shape, generator=self._state)
 
         if return_kld:
-            kld = (M**2 + S_exp**2 - S_log - .5).sum()
+            kld = (m**2 + s**2 - s_log - .5).sum()
 
-            return Z, kld
-        return Z
+            return z, kld
+        return z
 
 class VAE(BaseEstimator, TransformerMixin, nn.Module):
     @attrmethod
@@ -107,12 +124,10 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
         self._n_steps = 100
         self._step_n = 0
 
-    def __call__(self, X, eval=True, **kwargs):
-        local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
-        transform_kwargs = get_kwargs(self._transform, **call_kwargs)
-        Z = self._transform(**transform_kwargs)
+    def __call__(self, x, train=False, **kwargs):
+        z = self.transform(x, train, **kwargs)
 
-        return Z
+        return z
 
     def _step(self):
         loss = 0.
@@ -129,11 +144,15 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
 
         return loss
 
-    def _transform(self, X, eval=True):
-        if eval:
+    def _transform(self, x, train=False):
+        if train:
+            self.train()
+        else:
             self.eval()
 
-        return self._encoder(X).detach()
+        z = self._encoder(x).detach()
+
+        return z
 
     def _display(self, label='score'):
         desc = self.desc + '  ' if self.desc is not None else ''
@@ -145,24 +164,23 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
 
         print(msg)
 
-    def _setup(self, X, n_steps=None, learn_rate=1e-2, batch_size=-1, shuffle=True):
+    def _setup(self, x, n_steps=None, learn_rate=1e-2, batch_size=-1, shuffle=True):
         if n_steps is not None:
             self._n_steps = n_steps
         
         if batch_size < 0:
             batch_size = X.shape[0]//-batch_size
 
-        self._loader = DataLoader(X, batch_size, shuffle)
-        self._encoder = Encoder(X.shape[1], *self._channels, bias=self.bias, norm=self.norm, act=self.act, drop=self.drop)
+        self._loader = DataLoader(x, batch_size, shuffle)
+        self._encoder = Encoder(x.shape[1], *self._channels, bias=self.bias, norm=self.norm, act=self.act, drop=self.drop)
         self._decoder = MLP(*self._channels[::-1], X.shape[1], bias=self.bias, norm=self.norm, act=self.act, drop=self.drop)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
-
         self.logs_ = {k : v for k, v in self.__dict__.items() if k[-4:] == 'log_'}
         self.train()
 
     @checkmethod
     @buildmethod('_setup', '_build')
-    def fit(self, X, n_steps=None, learn_rate=1e-2, batch_size=None, shuffle=True, verbosity=1, display_rate=10, **kwargs):
+    def fit(self, x, n_steps=None, learn_rate=1e-2, batch_size=None, shuffle=True, verbosity=1, display_rate=10, **kwargs):
         local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, display_kwargs = get_kwargs(self._step, self._display, **local_kwargs)
         self.log_ = []
@@ -175,9 +193,9 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
 
         return self
 
-    def transform(self, X, eval=True, **kwargs):
+    def transform(self, x, train=False, **kwargs):
         local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         transform_kwargs = get_kwargs(self._transform, **local_kwargs)
-        Z = self._transform(**transform_kwargs)
+        z = self._transform(**transform_kwargs)
 
-        return Z
+        return z

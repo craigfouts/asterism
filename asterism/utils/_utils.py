@@ -36,10 +36,23 @@ __all__ = [
     'batch_split',
     'to_list',
     'to_tensor',
-    'torch_random_state'
+    'torch_random_state',
+    'fps'
 ]
 
 # cdist = _utils_.cdist
+
+def torch_random_state(seed=None):
+    if seed is None:
+        return Generator()
+    if isinstance(seed, Generator):
+        return seed
+    return Generator().manual_seed(seed)
+
+def random_state(seed=None, torch_state=False):
+    if torch_state:
+        return torch_random_state(seed)
+    return check_random_state(seed)
 
 @singledispatch
 def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
@@ -113,18 +126,6 @@ def to_tensor(*items, dtype=torch.float32):
     if len(tensors) == 1:
         return tensors[0]
     return tensors
-
-def torch_random_state(seed=None):
-    if seed is None:
-        return Generator()
-    if isinstance(seed, Generator):
-        return seed
-    return Generator().manual_seed(seed)
-
-def random_state(seed=None, torch_state=False):
-    if torch_state:
-        return torch_random_state(seed)
-    return check_random_state(seed)
 
 @singledispatch
 def pad(X, pad):
@@ -211,6 +212,76 @@ def _(x, y, imgs=None, n_test=1):
     return x_train, y_train, x_test, y_test
 
 @singledispatch
+def knn(x, k=1, loop=True):
+    adj = cdist(x, x).argsort(-1)
+    idx = (adj[:, :k] if loop else adj[:, 1:k + 1]).flatten()
+    edges = np.vstack((np.arange(len(X)).repeat(k), idx))
+
+    return edges
+
+@knn.register(torch.Tensor)
+def _(x, k=1, loop=True):
+    adj = torch.cdist(x, x).argsort(-1)
+    idx = (adj[:, :k] if loop else adj[:, 1:k + 1]).flatten()
+    edges = torch.vstack((torch.arange(x.shape[0]).repeat_interleave(k), idx))
+
+    return edges
+
+@singledispatch
+def knn2D(X, k=1, loop=True):
+    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
+    edges = np.zeros(2, len(X)*k, dtype=np.int32)
+
+    for i in range(len(np.unique(X[:, 0]))):
+        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
+        end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
+        edges[:, start:end] = knn(X[mask_i], k) + m
+
+    return edges
+
+@knn2D.register(torch.Tensor)
+def _(X, k=1, loop=True):
+    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
+    edges = torch.zeros(2, len(X)*k, dtype=torch.int32)
+
+    for i in range(len(X[:, 0].unique())):
+        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
+        end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
+        edges[:, start:end] = knn(X[mask_i], k) + m
+
+    return edges
+
+@singledispatch
+def fps(x, n_samples=5, seed=None, return_idx=False):
+    state = check_random_state(seed)
+    idx = np.empty(n_samples, dtype=np.int32)
+    idx[0] = state.randint(n_pts := x.shape[0])
+    prox = np.full(n_pts, np.inf)
+
+    for i in range(1, n_samples):
+        prox_ = np.linalg.norm(x - x[idx[i - 1]], axis=-1)
+        idx[i] = (prox := np.minimum(prox, prox_)).argmax()
+
+    samples = idx if return_idx else x[idx]
+
+    return samples
+
+@fps.register(torch.Tensor)
+def _(x, n_samples=5, seed=None, return_idx=False):
+    state = torch_random_state(seed)
+    idx = torch.empty(n_samples, dtype=torch.int32)
+    idx[0] = torch.randint(n_pts := x.shape[0], (1,), generator=state)
+    prox = torch.full((n_pts,), torch.inf)
+
+    for i in range(1, n_samples):
+        prox_ = torch.linalg.norm(x - x[idx[i - 1]], dim=-1)
+        idx[i] = (prox := torch.minimum(prox, prox_)).argmax()
+
+    samples = idx if return_idx else x[idx]
+
+    return samples
+
+@singledispatch
 def kmeans(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):
     state, k_range = check_random_state(seed), np.arange(k)
     labels = np.zeros((n_perms, n_samples := len(data)), dtype=np.int32)
@@ -249,46 +320,6 @@ def _(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None)
     labels = torch.mode(labels, 0).values
 
     return labels
-
-@singledispatch
-def knn(X, k=1, loop=True):
-    adj = cdist(X, X).argsort(-1)
-    idx = (adj[:, :k] if loop else adj[:, 1:k + 1]).flatten()
-    edges = np.vstack((np.arange(len(X)).repeat(k), idx))
-
-    return edges
-
-@knn.register(torch.Tensor)
-def _(X, k=1, loop=True):
-    adj = torch.cdist(X, X).argsort(-1)
-    idx = (adj[:, :k] if loop else adj[:, 1:k + 1]).flatten()
-    edges = torch.vstack((torch.arange(len(X)).repeat_interleave(k), idx))
-
-    return edges
-
-@singledispatch
-def knn2D(X, k=1, loop=True):
-    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
-    edges = np.zeros(2, len(X)*k, dtype=np.int32)
-
-    for i in range(len(np.unique(X[:, 0]))):
-        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
-        end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
-        edges[:, start:end] = knn(X[mask_i], k) + m
-
-    return edges
-
-@knn2D.register(torch.Tensor)
-def _(X, k=1, loop=True):
-    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
-    edges = torch.zeros(2, len(X)*k, dtype=torch.int32)
-
-    for i in range(len(X[:, 0].unique())):
-        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
-        end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
-        edges[:, start:end] = knn(X[mask_i], k) + m
-
-    return edges
 
 def normalize(x):
     x /= x.sum()

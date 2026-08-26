@@ -60,8 +60,8 @@ class ATLAS(Asterism, nn.Module):
         x_k, w = self._generate(z)
         x_K, _ = self._generate(z, self.n_topics_ + 1)
         n_topics = (x@w.T).argmax(-1).unique().shape[0]
-        loss_k = (x_k - x).square().sum(-1)/(n := x.shape[0])
-        loss_K = (x_K - x).square().sum(-1)/n
+        loss_k = (x_k - x).square().sum(-1)/(n_pts := x.shape[0])
+        loss_K = (x_K - x).square().sum(-1)/n_pts
         loss = loss_K.sum() + self.kld_scale*kld
         rate = (loss_k - loss_K).sum()/loss_K.sum()
 

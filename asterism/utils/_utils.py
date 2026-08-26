@@ -37,7 +37,8 @@ __all__ = [
     'to_list',
     'to_tensor',
     'torch_random_state',
-    'fps'
+    'fps',
+    'fpc'
 ]
 
 # cdist = _utils_.cdist
@@ -280,6 +281,22 @@ def _(x, n_samples=5, seed=None, return_idx=False):
     samples = idx if return_idx else x[idx]
 
     return samples
+
+@singledispatch
+def fpc(x, n_topics=5, seed=None):
+    e = fps(x, n_topics, seed)
+    prox = np.square(x[:, None] - e[None]).sum(-1)
+    topics = relabel(prox.argmin(-1))
+
+    return topics
+
+@fpc.register(torch.Tensor)
+def _(x, n_topics=5, seed=None):
+    e = fps(x, n_topics, seed)
+    prox = (x[:, None] - e[None]).square().sum(-1)
+    topics = relabel(prox.argmin(-1))
+
+    return topics
 
 @singledispatch
 def kmeans(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):

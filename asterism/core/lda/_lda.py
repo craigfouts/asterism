@@ -15,7 +15,7 @@ from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from torch import nn
 from ...base import Asterism
-from ...utils import kmeans, normalize, relabel
+from ...utils import fpc, normalize, relabel
 from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
@@ -37,10 +37,10 @@ class GibbsLDA(Asterism):
             self._burn_in = burn_in
 
         edges = cdist(x, x, 'seuclidean').argsort(-1)[:, :self.doc_size]
-        self.docs_ = kmeans(x, self.vocab_size, seed=self._state)[edges]
+        self.docs_ = fpc(x, self.vocab_size, seed=self._state)[edges]
         self.words_, topic_range = self.docs_.flatten(), np.arange(self.n_topics)[:, None]
-        self.topics_ = np.zeros((self._n_steps, n := self.words_.shape[0]), dtype=np.int32)
-        self.topics_[-1] = self._state.choice(self.n_topics, n)
+        self.topics_ = np.zeros((self._n_steps, n_pts := self.words_.shape[0]), dtype=np.int32)
+        self.topics_[-1] = self._state.choice(self.n_topics, n_pts)
         self.dt_post_ = np.eye(self.n_topics)[self.topics_[-1].reshape(*self.docs_.shape)].sum(1)
         self.tw_post_ = (self.topics_[-1] == topic_range)@np.eye(self.vocab_size)[self.words_]
 
@@ -107,11 +107,10 @@ class PyroLDA(Asterism, nn.Module):
         if clear_params:
             pyro.clear_param_store()
 
-        self._data, self._n_pts = x, x.shape[0]
-        self._dt_prior = self.dt_prior*torch.ones([self._n_pts, self.n_topics])
+        self._dt_prior = self.dt_prior*torch.ones([x.shape[0], self.n_topics])
         self._tw_prior = self.tw_prior*torch.ones([self.n_topics, self.vocab_size])
-        edges = torch.cdist(self._data, self._data).topk(self.doc_size, largest=False).indices
-        self.docs_ = kmeans(self._data, self.vocab_size, seed=self._state)[edges].T
+        edges = torch.cdist(x, x).topk(self.doc_size, largest=False).indices
+        self.docs_ = fpc(x, self.vocab_size, seed=self._state)[edges].T
         optim, elbo = Adam({'lr': learn_rate}), TraceEnum_ELBO(max_plate_nesting=2)
         self._svi = SVI(self._model, self._guide, optim, elbo)
         self.train()
@@ -151,12 +150,7 @@ class PyroLDA(Asterism, nn.Module):
         else:
             self.eval()
 
-        perms = torch.zeros(n_perms, self._n_pts)
-
-        for i in range(n_perms):
-            dt_post = pyro.param('dt_post', self._dt_prior, constraint=constraints.greater_than(.5))
-            perms[i] = relabel(pyro.sample('dt_probs', Dirichlet(dt_post)).argmax(-1).detach())
-
-        topics = perms.mode(0).values
+        dt_post = pyro.param('dt_post', self._dt_prior, constraint=constraints.greater_than(.5))
+        topics = relabel(pyro.sample('dt_probs', Dirichlet(dt_post)).argmax(-1)).detach()
 
         return topics

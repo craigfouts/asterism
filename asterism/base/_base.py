@@ -17,7 +17,7 @@ __all__ = [
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     @attrmethod
-    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparce=False, ensure_all_finite=True, **kwargs):
+    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, **kwargs):
         super().__init__(**kwargs)
 
         self._state = None

@@ -17,7 +17,7 @@ __all__ = [
 
 class RSB(Asterism, nn.Module):
     @attrmethod
-    def __init__(self, min_topics=1, *, channels=(128, 32), topic_rate=8., kld_scale=.1, optim='adam', desc='RSB', seed=None):
+    def __init__(self, min_topics=1, *, channels=(128, 32), topic_rate=16., kld_scale=.1, optim='adam', desc='RSB', seed=None):
         super().__init__(desc, seed)
 
         self._channels = (channels,) if isinstance(channels, int) else channels

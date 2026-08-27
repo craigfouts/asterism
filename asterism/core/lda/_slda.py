@@ -58,9 +58,9 @@ class GibbsSLDA(Asterism):
     
         self.words_ = fpc(self._words, self.vocab_size, seed=self._state)
         self.docs_, self.topics_ = np.zeros([2, self._n_steps, n_pts := x.shape[0]], dtype=np.int32)
-        self.docs_[-1:] = self._state.choice(m := self._docs.shape[0], n)
+        self.docs_[-1:] = self._state.choice(n_docs := self._docs.shape[0], n_pts)
         self.topics_[-1:] = self._state.choice(self.n_topics, n_pts)
-        doc_range, topic_range = np.arange(m)[:, None], np.arange(self.n_topics)[:, None]
+        doc_range, topic_range = np.arange(n_docs)[:, None], np.arange(self.n_topics)[:, None]
         self.dt_post_ = (self.docs_[-1] == doc_range)@np.eye(self.n_topics)[self.topics_[-1]]
         self.tw_post_ = (self.topics_[-1] == topic_range)@np.eye(self.vocab_size)[self.words_]
 

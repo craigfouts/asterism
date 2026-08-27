@@ -13,7 +13,7 @@ from ...utils import fps
 from ...utils.sugar import attrmethod
 
 __all__ = [
-    'VQAE'  # Line 17
+    'VQAE'  # Line 19
 ]
         
 class VQAE(Asterism, nn.Module):

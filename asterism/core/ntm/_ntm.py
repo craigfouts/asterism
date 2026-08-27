@@ -32,7 +32,7 @@ class NTM(Asterism, nn.Module):
         self._data, in_channels = x, x.shape[-1]
         out_channels = self.n_topics - (self.mode == 'dirichlet')
         self._loader = DataLoader(self._data, batch_size, shuffle, generator=self._state)
-        self._encoder = Encoder(in_channels, *self._channels, seed=self.state)
+        self._encoder = Encoder(in_channels, *self._channels, seed=self._state)
         self._dt_net = MLP(self._channels[-1], out_channels, final_act=self.mode, dim=-1)
         self._decoder = MLP(self.n_topics, in_channels, final_bias=False)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
@@ -43,7 +43,8 @@ class NTM(Asterism, nn.Module):
     def _evaluate(self, x):
         z, kld = self._encoder(x, return_kld=True)
         x_ = self._decoder(self._dt_net(z))
-        loss = (x_ - x).square().sum()/x.shape[0] + self.kld_scale*kld
+        x_loss = (x_ - x).square().sum()/x.shape[0]
+        loss = x_loss + self.kld_scale*kld
 
         return loss
     

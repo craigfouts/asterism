@@ -33,7 +33,7 @@ class ATLAS(Asterism, nn.Module):
 
         self._data = SimpleConv(aggr='mean')(x, knn2D(locs, self.doc_size))
         in_channels, out_channels = self._data.shape[-1], self._channels[-1]
-        self._loader = DataLoader(self._data, batch_size, shuffle)
+        self._loader = DataLoader(self._data, batch_size, shuffle, generator=self._state)
         self._encoder = Encoder(in_channels, *self._channels, act='prelu', seed=self._state)
         self._dt_net = RNN(out_channels, bias=False, act='prelu', seed=self._state)
         self._tw_net = RNN(out_channels, bias=False, act='prelu', seed=self._state)

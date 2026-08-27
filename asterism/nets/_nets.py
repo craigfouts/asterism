@@ -100,13 +100,12 @@ class Encoder(nn.Module):
         self._state = torch_random_state(seed)
         self._channels = channels if len(channels) > 2 else (channels[0], (channels[0] + channels[-1])//2, channels[-1])
         self._q_net = MLP(*self._channels[:-1], norm=norm, act=act, drop=drop, final_norm=norm, final_act=act, final_drop=drop, **kwargs)
-        self._m_mlp = MLP(*self._channels[-2:], final_bias=bias, final_norm=norm, **kwargs)
-        self._s_mlp = MLP(*self._channels[-2:], final_bias=bias, **kwargs)
+        self._m_net = MLP(*self._channels[-2:], final_bias=bias, final_norm=norm, **kwargs)
+        self._s_net = MLP(*self._channels[-2:], final_bias=bias, **kwargs)
 
     def forward(self, x, return_kld=False):
-        q = self._q_net(x)
-        m, s_log = self._m_mlp(q), self._s_mlp(q)
-        s = (.5*s_log).exp()
+        m = self._m_net(q := self._q_net(x))
+        s = (.5*(s_log := self._s_net(q))).exp()
         z = m + s*torch.randn(m.shape, generator=self._state)
 
         if return_kld:

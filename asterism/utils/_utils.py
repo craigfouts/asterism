@@ -37,23 +37,36 @@ __all__ = [
     'to_list',
     'to_tensor',
     'torch_random_state',
+    'set_torch_seed',
     'fps',
     'fpc'
 ]
 
 # cdist = _utils_.cdist
 
+def set_torch_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
 def torch_random_state(seed=None):
     if seed is None:
         return Generator()
     if isinstance(seed, Generator):
         return seed
-    return Generator().manual_seed(seed)
+
+    set_torch_seed(seed)
+    state = Generator().manual_seed(seed)
+
+    return state
 
 def random_state(seed=None, torch_state=False):
     if torch_state:
-        return torch_random_state(seed)
-    return check_random_state(seed)
+        state = torch_random_state(seed)
+    else:
+        state = check_random_state(seed)
+
+    return state
 
 @singledispatch
 def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
@@ -170,7 +183,7 @@ def _(labels, target=None):
 
     return labels
 
-def shuffle(data, labels=None, sort=False, cut=None):
+def shuffle(data, labels=None, sort=False, cut=None):  # TODO: seed
     mask = np.random.permutation(data.shape[-2])[:cut]
     data = data[:, mask] if data.ndim > 2 else data[mask]
 

@@ -17,37 +17,38 @@ from sklearn.metrics import confusion_matrix
 from sklearn.utils import check_array, check_random_state
 from torch import Generator
 from tqdm import tqdm
-# from . import _utils_
 
 __all__ = [
-    # 'cdist',
-    'check_data',
-    'get_kwargs',
-    'get_methods',
-    'kmeans',
-    'knn',
-    'knn2D',
-    'log_normalize',
-    'normalize',
-    'pad',
-    'random_state',
-    'relabel',
-    'shuffle',
-    'batch_split',
-    'to_list',
-    'to_tensor',
-    'torch_random_state',
-    'set_torch_seed',
-    'fps',
-    'fpc'
+    'set_torch_seed',      # Line 43
+    'torch_random_state',  # Line 53
+    'random_state',        # Line 63
+    'check_data',          # Line 72
+    'get_methods',         # Line 101
+    'get_kwargs',          # Line 110
+    'to_list',             # Line 121
+    'to_tensor',           # Line 134
+    'pad',                 # Line 145
+    'relabel',             # Line 157
+    'shuffle',             # Line 186
+    'batch_split',         # Line 198
+    'normalize',           # Line 229
+    'log_normalize',       # Line 235
+    'knn',                 # Line 249
+    'knn2D',               # Line 265
+    'fps',                 # Line 289
+    'fpc',                 # Line 319
+    'kmeans'               # Line 335
 ]
 
-# cdist = _utils_.cdist
-
-def set_torch_seed(seed):
+def set_torch_seed(seed, return_state=False):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+
+    if return_state:
+        state = Generator().manual_seed(seed)
+
+        return state
 
 def torch_random_state(seed=None):
     if seed is None:
@@ -55,8 +56,7 @@ def torch_random_state(seed=None):
     if isinstance(seed, Generator):
         return seed
 
-    set_torch_seed(seed)
-    state = Generator().manual_seed(seed)
+    state = set_torch_seed(seed, return_state==True)
 
     return state
 
@@ -183,8 +183,9 @@ def _(labels, target=None):
 
     return labels
 
-def shuffle(data, labels=None, sort=False, cut=None):  # TODO: seed
-    mask = np.random.permutation(data.shape[-2])[:cut]
+def shuffle(data, labels=None, sort=False, cut=None, seed=None):
+    state = random_state(seed, isinstance(data, torch.Tensor))
+    mask = state.permutation(data.shape[-2])[:cut]
     data = data[:, mask] if data.ndim > 2 else data[mask]
 
     if labels is not None:
@@ -224,6 +225,25 @@ def _(x, y, imgs=None, n_test=1):
     y_train, y_test = y[:train_size], y[train_size:]
 
     return x_train, y_train, x_test, y_test
+
+def normalize(x):
+    x /= x.sum()
+
+    return x
+
+@singledispatch
+def log_normalize(x):
+    m, _ = x.max(1, keepdims=True)
+    x = x - m - (x - m).exp().sum(1, keepdims=True).log()
+
+    return x
+
+@log_normalize.register(torch.Tensor)
+def _(x):
+    m, _ = x.max(1, keepdim=True)
+    x = x - m - (x - m).exp().sum(1, keepdim=True).log()
+
+    return x
 
 @singledispatch
 def knn(x, k=1, loop=True):
@@ -350,22 +370,3 @@ def _(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None)
     labels = torch.mode(labels, 0).values
 
     return labels
-
-def normalize(x):
-    x /= x.sum()
-
-    return x
-
-@singledispatch
-def log_normalize(x):
-    m, _ = x.max(1, keepdims=True)
-    x = x - m - (x - m).exp().sum(1, keepdims=True).log()
-
-    return x
-
-@log_normalize.register(torch.Tensor)
-def _(x):
-    m, _ = x.max(1, keepdim=True)
-    x = x - m - (x - m).exp().sum(1, keepdim=True).log()
-
-    return x

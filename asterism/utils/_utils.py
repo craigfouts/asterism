@@ -293,8 +293,8 @@ def fps(x, n_samples=5, seed=None, return_idx=False):
     prox = np.full(n_pts, np.inf)
 
     for i in range(1, n_samples):
-        prox_ = np.linalg.norm(x - x[idx[i - 1]], axis=-1)
-        idx[i] = (prox := np.minimum(prox, prox_)).argmax()
+        i_prox = np.linalg.norm(x - x[idx[i - 1]], axis=-1)
+        idx[i] = (prox := np.minimum(prox, i_prox)).argmax()
 
     samples = idx if return_idx else x[idx]
 
@@ -308,8 +308,8 @@ def _(x, n_samples=5, seed=None, return_idx=False):
     prox = torch.full((n_pts,), torch.inf)
 
     for i in range(1, n_samples):
-        prox_ = torch.linalg.norm(x - x[idx[i - 1]], dim=-1)
-        idx[i] = (prox := torch.minimum(prox, prox_)).argmax()
+        i_prox = torch.linalg.norm(x - x[idx[i - 1]], dim=-1)
+        idx[i] = (prox := torch.minimum(prox, i_prox)).argmax()
 
     samples = idx if return_idx else x[idx]
 

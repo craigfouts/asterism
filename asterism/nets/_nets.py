@@ -157,7 +157,7 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
         desc = self.desc + '  ' if self.desc is not None else ''
         msg = f'{desc}step: {self._step_n}'
 
-        for k, v in logs:
+        for k, v in self.logs_:
             if len(v) > 0:
                 msg += f'  {k[:-5] if len(k) > 5 else label}: {v[-1]}'
 
@@ -168,11 +168,11 @@ class VAE(BaseEstimator, TransformerMixin, nn.Module):
             self._n_steps = n_steps
         
         if batch_size < 0:
-            batch_size = X.shape[0]//-batch_size
+            batch_size = x.shape[0]//-batch_size
 
         self._loader = DataLoader(x, batch_size, shuffle)
         self._encoder = Encoder(x.shape[1], *self._channels, bias=self.bias, norm=self.norm, act=self.act, drop=self.drop)
-        self._decoder = MLP(*self._channels[::-1], X.shape[1], bias=self.bias, norm=self.norm, act=self.act, drop=self.drop)
+        self._decoder = MLP(*self._channels[::-1], x.shape[-1], bias=self.bias, norm=self.norm, act=self.act, drop=self.drop)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
         self.logs_ = {k : v for k, v in self.__dict__.items() if k[-4:] == 'log_'}
         self.train()

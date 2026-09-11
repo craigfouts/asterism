@@ -56,7 +56,7 @@ def torch_random_state(seed=None):
     if isinstance(seed, Generator):
         return seed
 
-    state = set_torch_seed(seed, return_state==True)
+    state = set_torch_seed(seed, return_state=True)
 
     return state
 
@@ -249,7 +249,7 @@ def _(x):
 def knn(x, k=1, loop=True):
     adj = cdist(x, x).argsort(-1)
     idx = (adj[:, :k] if loop else adj[:, 1:k + 1]).flatten()
-    edges = np.vstack((np.arange(len(X)).repeat(k), idx))
+    edges = np.vstack((np.arange(x.shape[0]).repeat(k), idx))
 
     return edges
 

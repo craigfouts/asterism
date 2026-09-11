@@ -17,8 +17,8 @@ __all__ = [
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     @attrmethod
-    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
+        super().__init__()
 
         self._state = None
         self._n_steps = 200
@@ -50,6 +50,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         print(msg)
 
     def _setup(self, x, locs=None, n_steps=None):
+        self.n_features_in_, self.log_ = x.shape[-1], []
         self.logs_ = {k: v for k, v in self.__dict__.items() if k.endswith('log_')}
 
         if self._state is None:
@@ -66,7 +67,6 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     def fit(self, x, y=None, locs=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **local_kwargs)
-        self.log_ = []
 
         for self._step_n in tqdm(range(self._n_steps), self.desc) if verbosity == 1 else range(self._n_steps):
             self.log_.append(self._step(**step_kwargs))

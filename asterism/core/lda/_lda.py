@@ -25,7 +25,7 @@ __all__ = [
 
 class GibbsLDA(Asterism):
     @attrmethod
-    def __init__(self, n_topics, *, doc_size=32, vocab_size=16, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
+    def __init__(self, n_topics=5, *, doc_size=32, vocab_size=16, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
         super().__init__(desc, seed)
 
         self._n_steps = 50
@@ -70,7 +70,7 @@ class GibbsLDA(Asterism):
 
     def _step(self):
         perm = self._state.permutation(self.words_.shape[0])
-        llh = 0
+        llh = 0.
 
         for idx in perm:
             doc, topic, word = self._query(idx)
@@ -80,7 +80,7 @@ class GibbsLDA(Asterism):
             self.topics_[self._step_n, idx] = topic_
             llh += topic_prob
 
-        return llh
+        return llh.item()
 
     def _predict(self):
         topics = mode(self.topics_[self._burn_in:]).mode

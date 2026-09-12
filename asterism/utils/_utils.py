@@ -40,6 +40,7 @@ __all__ = [
     'kmeans'               # Line 335
 ]
 
+@singledispatch
 def set_torch_seed(seed, return_state=False):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -49,6 +50,13 @@ def set_torch_seed(seed, return_state=False):
         state = Generator().manual_seed(seed)
 
         return state
+
+@set_torch_seed.register(np.random.mtrand.RandomState)
+def _(seed, return_state=False):
+    seed = seed.get_state()[1][0].item()
+    state = set_torch_seed(seed, return_state)
+
+    return state
 
 def torch_random_state(seed=None):
     if seed is None:

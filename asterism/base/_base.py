@@ -7,8 +7,9 @@ License: Apache 2.0 license
 import torch
 from abc import abstractmethod, ABCMeta
 from sklearn.base import BaseEstimator, ClusterMixin
+from sklearn.utils.multiclass import type_of_target
 from tqdm import tqdm
-from ..utils import get_kwargs, pad, random_state, relabel
+from ..utils import get_kwargs, pad, random_state, relabel, to_tensor
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [
@@ -17,7 +18,7 @@ __all__ = [
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     @attrmethod
-    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
+    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, torch_model=False):
         super().__init__()
 
         self._state = None
@@ -49,12 +50,15 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
         print(msg)
 
-    def _setup(self, x, locs=None, n_steps=None):
+    def _setup(self, x, y=None, locs=None, n_steps=None):
         self.n_features_in_, self.log_ = x.shape[-1], []
         self.logs_ = {k: v for k, v in self.__dict__.items() if k.endswith('log_')}
 
+        if y is not None:
+            type_of_target(y, raise_unknown=True)
+
         if self._state is None:
-            self._state = random_state(self.seed, isinstance(x, torch.Tensor))
+            self._state = random_state(self.seed, self.torch_model)
 
         if locs is not None:
             self._locs = pad(locs, ((n := 3 - locs.shape[1])*(n > 0), 0))
@@ -73,6 +77,9 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
             if verbosity == 2 and self._step_n%display_rate == 0:
                 self._display(**display_kwargs)
+
+        if y is not None and self.torch_model:
+            y = to_tensor(y)
 
         self.labels_ = relabel(self._predict(**predict_kwargs), y)
 

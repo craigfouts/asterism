@@ -9,9 +9,9 @@ from inspect import getcallargs
 from ._utils import check_data, get_kwargs, get_methods
 
 __all__ = [
-    'attrmethod',
-    'buildmethod',
-    'checkmethod'
+    'attrmethod',   # Line 18
+    'buildmethod',  # Line 50
+    'checkmethod'   # Line 85
 ]
 
 @singledispatch
@@ -56,7 +56,10 @@ def buildmethod(method):
             build = getattr(cls, builder)
             method_kwargs = dict(getcallargs(method, cls, *args, **kwargs), **kwargs)
             build_kwargs = get_kwargs(build, **method_kwargs)
-            build(**build_kwargs)
+            update = build(**build_kwargs)
+
+            if update is not None:
+                kwargs.update(update)
 
         return method(cls, *args, **kwargs)
     return wrapper
@@ -70,7 +73,10 @@ def _(*builders):
                 build = getattr(cls, builder)
                 method_kwargs = dict(getcallargs(method, cls, *args, **kwargs), **kwargs)
                 build_kwargs = get_kwargs(build, **method_kwargs)
-                build(**build_kwargs)
+                update = build(**build_kwargs)
+
+                if update is not None:
+                    kwargs.update(update)
 
             return method(cls, *args, **kwargs)
         return wrapper

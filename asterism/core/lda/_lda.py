@@ -15,12 +15,12 @@ from scipy.spatial.distance import cdist
 from scipy.stats import mode
 from torch import nn
 from ...base import Asterism
-from ...utils import fpc, normalize, relabel
+from ...utils import fpc, normalize, relabel, to_tensor
 from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
     'GibbsLDA',  # Line 26
-    'PyroLDA'    # Line 94
+    'PyroLDA'    # Line 96
 ]
 
 class GibbsLDA(Asterism):
@@ -30,12 +30,14 @@ class GibbsLDA(Asterism):
 
         self._n_steps = 50
 
-    def _build(self, x, burn_in=-2):
+    def _check(self, burn_in=-2):
         if burn_in < 0:
             self._burn_in = self._n_steps//-burn_in
         else:
             self._burn_in = burn_in
 
+    @buildmethod('_check')
+    def _build(self, x, burn_in=-2):
         edges = cdist(x, x, 'seuclidean').argsort(-1)[:, :self.doc_size]
         self.docs_ = fpc(x, self.vocab_size, seed=self._state)[edges]
         self.words_, topic_range = self.docs_.flatten(), np.arange(self.n_topics)[:, None]
@@ -93,12 +95,17 @@ class GibbsLDA(Asterism):
 
 class PyroLDA(Asterism, nn.Module):
     @attrmethod
-    def __init__(self, n_topics, *, doc_size=32, vocab_size=16, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
-        super().__init__(desc, seed)
+    def __init__(self, n_topics=5, *, doc_size=32, vocab_size=16, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
+        super().__init__(desc, seed, torch_model=True)
 
+        self._return_tensor = True
         self._n_steps = 200
 
-    def _build(self, x, learn_rate=1e-1, batch_size=-1, clear_params=True):
+    def _check(self, x, batch_size=-1, clear_params=True):
+        if not isinstance(x, torch.Tensor):
+            self._return_tensor = False
+            x = to_tensor(x)
+        
         if batch_size < 0:
             self._batch_size = x.shape[0]//-batch_size
         else:
@@ -107,6 +114,11 @@ class PyroLDA(Asterism, nn.Module):
         if clear_params:
             pyro.clear_param_store()
 
+        return {'x': x}
+
+    @buildmethod('_check')
+    def _build(self, x, learn_rate=1e-1, batch_size=-1, clear_params=True):
+        self.doc_size = min(self.doc_size, x.shape[0])
         self._dt_prior = self.dt_prior*torch.ones([x.shape[0], self.n_topics])
         self._tw_prior = self.tw_prior*torch.ones([self.n_topics, self.vocab_size])
         edges = torch.cdist(x, x).topk(self.doc_size, largest=False).indices
@@ -153,4 +165,6 @@ class PyroLDA(Asterism, nn.Module):
         dt_post = pyro.param('dt_post', self._dt_prior, constraint=constraints.greater_than(.5))
         topics = relabel(pyro.sample('dt_probs', Dirichlet(dt_post)).argmax(-1)).detach()
 
+        if not self._return_tensor:
+            return topics.numpy()
         return topics

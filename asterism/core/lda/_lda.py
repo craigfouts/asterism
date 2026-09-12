@@ -98,14 +98,9 @@ class PyroLDA(Asterism, nn.Module):
     def __init__(self, n_topics=5, *, doc_size=32, vocab_size=16, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
         super().__init__(desc, seed, torch_model=True)
 
-        self._return_tensor = True
         self._n_steps = 200
 
-    def _check(self, x, batch_size=-1, clear_params=True):
-        if not isinstance(x, torch.Tensor):
-            self._return_tensor = False
-            x = to_tensor(x)
-        
+    def _check(self, x, batch_size=-1, clear_params=True):  
         if batch_size < 0:
             self._batch_size = x.shape[0]//-batch_size
         else:
@@ -114,10 +109,8 @@ class PyroLDA(Asterism, nn.Module):
         if clear_params:
             pyro.clear_param_store()
 
-        return {'x': x}
-
     @buildmethod('_check')
-    def _build(self, x, learn_rate=1e-1, batch_size=-1, clear_params=True):
+    def _build(self, x, y=None, learn_rate=1e-1, batch_size=-1, clear_params=True):
         self.doc_size = min(self.doc_size, x.shape[0])
         self._dt_prior = self.dt_prior*torch.ones([x.shape[0], self.n_topics])
         self._tw_prior = self.tw_prior*torch.ones([self.n_topics, self.vocab_size])
@@ -165,6 +158,4 @@ class PyroLDA(Asterism, nn.Module):
         dt_post = pyro.param('dt_post', self._dt_prior, constraint=constraints.greater_than(.5))
         topics = relabel(pyro.sample('dt_probs', Dirichlet(dt_post)).argmax(-1)).detach()
 
-        if not self._return_tensor:
-            return topics.numpy()
         return topics

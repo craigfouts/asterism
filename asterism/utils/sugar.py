@@ -50,18 +50,18 @@ def _(prefix='', suffix=''):
 def buildmethod(method):
     @wraps(method)
     def wrapper(cls, *args, **kwargs):
+        kwargs.update(zip(method.__code__.co_varnames, (cls, *args)))
         builders = get_methods(cls, '_build')
 
         for builder in filter(lambda x: x != method.__name__, builders):
             build = getattr(cls, builder)
-            method_kwargs = dict(getcallargs(method, cls, *args, **kwargs), **kwargs)
-            build_kwargs = get_kwargs(build, **method_kwargs)
+            build_kwargs = get_kwargs(build, **kwargs)
             update = build(**build_kwargs)
 
             if update is not None:
                 kwargs.update(update)
 
-        return method(cls, *args, **kwargs)
+        return method(**kwargs)
     return wrapper
 
 @buildmethod.register(str)
@@ -69,16 +69,17 @@ def _(*builders):
     def decorator(method):
         @wraps(method)
         def wrapper(cls, *args, **kwargs):
+            kwargs.update(zip(method.__code__.co_varnames, (cls, *args)))
+
             for builder in filter(lambda x: hasattr(cls, x), builders):
                 build = getattr(cls, builder)
-                method_kwargs = dict(getcallargs(method, cls, *args, **kwargs), **kwargs)
-                build_kwargs = get_kwargs(build, **method_kwargs)
+                build_kwargs = get_kwargs(build, **kwargs)
                 update = build(**build_kwargs)
 
                 if update is not None:
                     kwargs.update(update)
 
-            return method(cls, *args, **kwargs)
+            return method(**kwargs)
         return wrapper
     return decorator
 

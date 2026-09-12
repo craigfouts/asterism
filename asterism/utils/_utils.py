@@ -47,7 +47,10 @@ def set_torch_seed(seed, return_state=False):
     torch.cuda.manual_seed_all(seed)
 
     if return_state:
-        state = Generator().manual_seed(seed)
+        try:
+            state = Generator().manual_seed(seed)
+        except:
+            print(seed)
 
         return state
 
@@ -143,7 +146,10 @@ def to_tensor(*items, dtype=torch.float32):
     tensors = []
 
     for i in items:
-        tensors.append(torch.tensor(i, dtype=dtype))
+        if i is not None:
+            tensors.append(torch.tensor(i, dtype=dtype))
+        else:
+            tensors.append(None)
 
     if len(tensors) == 1:
         return tensors[0]

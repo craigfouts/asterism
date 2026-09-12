@@ -18,7 +18,7 @@ __all__ = [
 
 class GibbsSLDA(Asterism):
     @attrmethod
-    def __init__(self, n_topics, *, n_docs=-16, doc_size=6., word_size=6., vocab_size=16, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
+    def __init__(self, n_topics=5, *, n_docs=-16, doc_size=6., word_size=6., vocab_size=16, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):
         super().__init__(desc, seed)
 
         self._n_steps = 200

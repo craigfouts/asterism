@@ -60,7 +60,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
             self._n_steps = n_steps
 
     @buildmethod('_Asterism__check')
-    def __setup(self, x, y=None, locs=None, n_steps=None):
+    def __build(self, x, y=None, locs=None, n_steps=None):
         self._tensor_io = isinstance(x, torch.Tensor)
         self.n_features_in_, self.log_ = x.shape[-1], []
         self.logs_ = {k: v for k, v in self.__dict__.items() if k.endswith('log_')}
@@ -74,7 +74,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         return {'x': x, 'y': y}
 
     @checkmethod
-    @buildmethod('_Asterism__setup', '_build')
+    @buildmethod('_Asterism__build', '_build')
     def fit(self, x, y=None, locs=None, n_steps=None, verbosity=1, display_rate=10, **kwargs):
         local_kwargs = dict(tuple(locals().items())[:-1], **kwargs)
         step_kwargs, predict_kwargs, display_kwargs = get_kwargs(self._step, self._predict, self._display, **local_kwargs)

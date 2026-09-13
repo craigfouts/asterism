@@ -9,7 +9,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from ...base import Asterism
 from ...nets import OPTIMS, Encoder, MLP, RNN
-from ...utils.sugar import attrmethod
+from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
     'RSB'  # 18
@@ -25,10 +25,14 @@ class RSB(Asterism, nn.Module):
         self.n_topics_ = min_topics
         self.topic_log_ = []
 
-    def _build(self, x, learn_rate=1e-2, batch_size=32, shuffle=True):
+    def _check(self, x, batch_size=32):
         if batch_size < 0:
             batch_size = x.shape[0]//-batch_size
 
+        return {'batch_size': batch_size}
+
+    @buildmethod('_check')
+    def _build(self, x, learn_rate=1e-2, batch_size=32, shuffle=True):
         self._data, in_channels, out_channels = x, x.shape[-1], self._channels[-1]
         self._loader = DataLoader(self._data, batch_size, shuffle, generator=self._state)
         self._encoder = Encoder(in_channels, *self._channels, act='prelu', seed=self._state)
@@ -37,8 +41,6 @@ class RSB(Asterism, nn.Module):
         self._decoder = MLP(out_channels, in_channels, final_bias=False)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
         self.train()
-
-        return self
     
     def _generate(self, z=None, n_topics=-1):
         if n_topics == -1:

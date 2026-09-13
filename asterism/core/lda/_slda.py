@@ -49,13 +49,15 @@ class GibbsSLDA(Asterism):
 
         self._words = np.concat(words, 0)
 
-    @buildmethod
-    def _build(self, x, locs, burn_in=-2):
+    def _check(self, burn_in=-2):
         if burn_in < 0:
             self._burn_in = self._n_steps//-burn_in
         else:
             self._burn_in = burn_in
-    
+
+    @buildmethod
+    @buildmethod('_check')
+    def _build(self, x, locs, burn_in=-2):
         self.words_ = fpc(self._words, self.vocab_size, seed=self._state)
         self.docs_, self.topics_ = np.zeros([2, self._n_steps, n_pts := x.shape[0]], dtype=np.int32)
         self.docs_[-1:] = self._state.choice(n_docs := self._docs.shape[0], n_pts)

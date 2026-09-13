@@ -96,7 +96,7 @@ class GibbsLDA(Asterism):
 class PyroLDA(Asterism, nn.Module):
     @attrmethod
     def __init__(self, n_topics=5, *, doc_size=32, vocab_size=16, dt_prior=1., tw_prior=1., desc='LDA', seed=None):
-        super().__init__(desc, seed, torch_model=True)
+        super().__init__(desc, seed)
 
         self._n_steps = 200
 

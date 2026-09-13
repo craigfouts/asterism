@@ -18,16 +18,19 @@ __all__ = [
         
 class VQAE(Asterism, nn.Module):
     @attrmethod
-    def __init__(self, n_topics, *, channels=(128, 32), optim='adam', desc='VQAE', seed=None):
+    def __init__(self, n_topics=5, *, channels=(128, 32), optim='adam', desc='VQAE', seed=None):
         super().__init__(desc, seed)
 
         self._channels = (channels,) if isinstance(channels, int) else channels
         self._n_steps = 200
-        
-    def _build(self, x, learn_rate=1e-3, batch_size=32, shuffle=True):
+
+    def _check(self, x, batch_size=32):
         if batch_size < 0:
             batch_size = x.shape[0]//-batch_size
 
+        return {'batch_size': batch_size}
+        
+    def _build(self, x, learn_rate=1e-3, batch_size=32, shuffle=True):
         self._data, in_channels = x, x.shape[-1]
         self._loader = DataLoader(self._data, batch_size, shuffle, generator=self._state)
         self._encoder = MLP(in_channels, *self._channels, act='relu')
@@ -36,8 +39,6 @@ class VQAE(Asterism, nn.Module):
         self._codebook = nn.Parameter(codebook, requires_grad=True)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
         self.train()
-
-        return self
     
     def _quantize(self, z, z_grad=False, e_grad=False, return_loss=False):
         z_ = z if z_grad else z.detach()

@@ -14,7 +14,7 @@ from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
     'Encoder',  # Line 20
-    'NCP'       # Line 99
+    'NCP'       # Line 101
 ]
 
 class Encoder(nn.Module):
@@ -30,19 +30,19 @@ class Encoder(nn.Module):
         self._bc_mlp = MLP(wc_channels[-1], *bc_channels, act='prelu')
         self._lp_mlp = MLP(wc_channels[-1] + bc_channels[-1], *self.lp_channels, act='prelu', final_bias=False)
 
-    def _build(self, x):
+    def _check(self, x):
         if x.ndim > 2:
             self._batch_size = x.shape[0]
         else:
             self._batch_size = 1
 
+    @buildmethod('_check')
+    def _build(self, x):
         self._n_pts, self.n_topics_ = x.shape[-2], 1
         self._topic_range = torch.arange(self.n_topics_)
         self._wc, self._us = self._wc_mlp(x), self._us_mlp(x)
         self._WC = torch.zeros((self._batch_size, 1, self.wc_channels[-1]))
         self._WC[:, 0], self._US = self._wc[:, 0], self._us[:, 2:].sum(1)
-
-        return self
     
     def _update(self, idx, topics):
         n_topics = topics[:idx].unique().shape[0]
@@ -103,7 +103,7 @@ class NCP(Asterism, nn.Module):
 
         self._n_steps = 200
 
-    def _build(self, x, learning_rate=1e-4, weight_decay=1e-2, batch_size=16):
+    def _check(self, x, batch_size=16):
         self._n_pts = x.shape[0]
 
         if x.ndim > 2 and self._n_pts > 1:
@@ -111,11 +111,11 @@ class NCP(Asterism, nn.Module):
         else:
             self._batch_size = batch_size
 
+    @buildmethod('_check')
+    def _build(self, x, learning_rate=1e-4, weight_decay=1e-2, batch_size=16):
         self._encoder = Encoder(x.shape[-1], wc_channels=self.wc_channels, bc_channels=self.bc_channels, lp_channels=self.lp_channels)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learning_rate, weight_decay=weight_decay)
         self.train()
-
-        return self
     
     def _step(self, x, y, n_perms=4, n_pts=64):
         mask = torch.randperm(self._n_pts, generator=self._state)[:self._batch_size]

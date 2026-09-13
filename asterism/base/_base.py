@@ -8,17 +8,18 @@ import torch
 from abc import abstractmethod, ABCMeta
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.multiclass import type_of_target
+from torch import nn
 from tqdm import tqdm
 from ..utils import get_kwargs, pad, random_state, relabel, to_tensor
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [
-    'Asterism'  # Line 18
+    'Asterism'  # Line 20
 ]
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     @attrmethod
-    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True, torch_model=False):
+    def __init__(self, desc=None, seed=None, *, check=True, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
         super().__init__()
 
         self._n_steps = 200
@@ -50,8 +51,10 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         print(msg)
 
     def __check(self, locs=None, n_steps=None):
+        self._torch_module = issubclass(self.__class__, nn.Module)
+
         if not hasattr(self, '_state'):
-            self._state = random_state(self.seed, self.torch_model)
+            self._state = random_state(self.seed, self._torch_module)
 
         if locs is not None:
             self._locs = pad(locs, ((n := 3 - locs.shape[1])*(n > 0), 0))
@@ -68,7 +71,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
         if y is not None:
             type_of_target(y, raise_unknown=True)
 
-        if self.torch_model:
+        if self._torch_module:
             x, y = to_tensor(x, y)
 
         return {'x': x, 'y': y}
@@ -89,7 +92,7 @@ class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
 
         if self._tensor_io:
             self.labels_ = to_tensor(self.labels_)
-        elif self.torch_model:
+        elif self._torch_module:
             self.labels_ = self.labels_.numpy()
 
         return self

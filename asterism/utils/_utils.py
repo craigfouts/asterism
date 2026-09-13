@@ -47,10 +47,7 @@ def set_torch_seed(seed, return_state=False):
     torch.cuda.manual_seed_all(seed)
 
     if return_state:
-        try:
-            state = Generator().manual_seed(seed)
-        except:
-            print(seed)
+        state = Generator().manual_seed(seed)
 
         return state
 
@@ -147,7 +144,10 @@ def to_tensor(*items, dtype=torch.float32):
 
     for i in items:
         if i is not None:
-            tensors.append(torch.tensor(i, dtype=dtype))
+            if not isinstance(i, torch.Tensor):
+                i = torch.tensor(i, dtype=dtype)
+
+            tensors.append(i)
         else:
             tensors.append(None)
 
@@ -197,9 +197,22 @@ def _(labels, target=None):
 
     return labels
 
+@singledispatch
 def shuffle(data, labels=None, sort=False, cut=None, seed=None):
-    state = random_state(seed, isinstance(data, torch.Tensor))
+    state = random_state(seed)
     mask = state.permutation(data.shape[-2])[:cut]
+    data = data[:, mask] if data.ndim > 2 else data[mask]
+
+    if labels is not None:
+        labels = relabel(labels[mask]) if sort else labels[mask]
+
+        return data, labels
+    return data
+
+@shuffle.register(torch.Tensor)
+def _(data, labels=None, sort=False, cut=None, seed=None):
+    state = random_state(seed, torch_state=True)
+    mask = torch.randperm(data.shape[-2], generator=state)[:cut]
     data = data[:, mask] if data.ndim > 2 else data[mask]
 
     if labels is not None:

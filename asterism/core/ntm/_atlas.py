@@ -11,7 +11,7 @@ from torch_geometric.nn.conv import SimpleConv
 from ...base import Asterism
 from ...nets import OPTIMS, Encoder, MLP, RNN
 from ...utils import knn2D
-from ...utils.sugar import attrmethod
+from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
     'ATLAS'  # Line 20
@@ -27,10 +27,14 @@ class ATLAS(Asterism, nn.Module):
         self.n_topics_ = min_topics
         self.topic_log_ = []
 
-    def _build(self, x, locs, learn_rate=1e-2, batch_size=32, shuffle=True):
+    def _check(self, x, batch_size=32):
         if batch_size < 0:
             batch_size = x.shape[0]//-batch_size
 
+        return {'batch_size': batch_size}
+
+    @buildmethod('_check')
+    def _build(self, x, locs, learn_rate=1e-2, batch_size=32, shuffle=True):
         self._data = SimpleConv(aggr='mean')(x, knn2D(locs, self.doc_size))
         in_channels, out_channels = self._data.shape[-1], self._channels[-1]
         self._loader = DataLoader(self._data, batch_size, shuffle, generator=self._state)
@@ -40,8 +44,6 @@ class ATLAS(Asterism, nn.Module):
         self._decoder = MLP(out_channels, in_channels, final_bias=False)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
         self.train()
-
-        return self
     
     def _generate(self, z=None, n_topics=-1):
         if n_topics == -1:

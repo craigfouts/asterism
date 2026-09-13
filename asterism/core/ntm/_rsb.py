@@ -22,8 +22,6 @@ class RSB(Asterism, nn.Module):
 
         self._channels = (channels,) if isinstance(channels, int) else channels
         self._n_steps = 1000
-        self.n_topics_ = min_topics
-        self.topic_log_ = []
 
     def _check(self, x, batch_size=32):
         if batch_size < 0:
@@ -40,6 +38,7 @@ class RSB(Asterism, nn.Module):
         self._tw_net = RNN(out_channels, bias=False, act='prelu', seed=self._state)
         self._decoder = MLP(out_channels, in_channels, final_bias=False)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
+        self.n_topics_, self.topic_log_ = self.min_topics, []
         self.train()
     
     def _generate(self, z=None, n_topics=-1):
@@ -64,7 +63,7 @@ class RSB(Asterism, nn.Module):
         loss = loss_K.sum() + self.kld_scale*kld
         rate = (loss_k - loss_K).sum()/loss_K.sum()
 
-        if n_topics < self.n_topics_:
+        if self.n_topics_ > self.min_topics and n_topics < self.n_topics_:
             self.n_topics_ -= 1
         elif self.topic_rate > 0. and rate > 1./self.topic_rate:
             self.n_topics_ += 1

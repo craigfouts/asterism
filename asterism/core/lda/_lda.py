@@ -101,6 +101,11 @@ class PyroLDA(Asterism, nn.Module):
         self._n_steps = 200
 
     def _check(self, x, batch_size=-1, clear_params=True):  
+        if x.shape[0] < self.doc_size:
+            self._doc_size = x.shape[0]
+        else:
+            self._doc_size = self.doc_size
+
         if batch_size < 0:
             self._batch_size = x.shape[0]//-batch_size
         else:
@@ -111,13 +116,12 @@ class PyroLDA(Asterism, nn.Module):
 
     @buildmethod('_check')
     def _build(self, x, y=None, learn_rate=1e-1, batch_size=-1, clear_params=True):
-        self.doc_size = min(self.doc_size, x.shape[0])
         self._dt_prior = self.dt_prior*torch.ones([x.shape[0], self.n_topics])
         self._tw_prior = self.tw_prior*torch.ones([self.n_topics, self.vocab_size])
-        edges = torch.cdist(x, x).topk(self.doc_size, largest=False).indices
-        self.docs_ = fpc(x, self.vocab_size, seed=self._state)[edges].T
         optim, elbo = Adam({'lr': learn_rate}), TraceEnum_ELBO(max_plate_nesting=2)
         self._svi = SVI(self._model, self._guide, optim, elbo)
+        edges = torch.cdist(x, x).topk(self._doc_size, largest=False).indices
+        self.docs_ = fpc(x, self.vocab_size, seed=self._state)[edges].T
         self.train()
 
     def _model(self, x):

@@ -5,11 +5,10 @@ License: Apache 2.0 license
 '''
 
 from sklearn.utils.estimator_checks import parametrize_with_checks
-from .._lda import *
+from .._qae import *
 
 _ESTIMATORS = [
-    GibbsLDA(),
-    PyroLDA()
+    VQAE()
 ]
 
 _EXPECTED_FAILED_CHECKS = lambda _: {

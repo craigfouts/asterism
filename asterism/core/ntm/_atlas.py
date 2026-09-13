@@ -24,8 +24,6 @@ class ATLAS(Asterism, nn.Module):
 
         self._channels = (channels,) if isinstance(channels, int) else channels
         self._n_steps = 1000
-        self.n_topics_ = min_topics
-        self.topic_log_ = []
 
     def _check(self, x, batch_size=32):
         if batch_size < 0:
@@ -43,6 +41,7 @@ class ATLAS(Asterism, nn.Module):
         self._tw_net = RNN(out_channels, bias=False, act='prelu', seed=self._state)
         self._decoder = MLP(out_channels, in_channels, final_bias=False)
         self._optim = OPTIMS[self.optim](self.parameters(), lr=learn_rate)
+        self.n_topics_, self.topic_log_ = self.min_topics, []
         self.train()
     
     def _generate(self, z=None, n_topics=-1):

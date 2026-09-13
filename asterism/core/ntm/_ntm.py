@@ -19,9 +19,6 @@ class NTM(Asterism, nn.Module):
     def __init__(self, n_topics=5, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', seed=None):
         super().__init__(desc, seed)
 
-        if mode.lower() not in ('softmax', 'dirichlet'):
-            raise ValueError(f'Mode `{mode}` not supported.')
-
         self._channels = (channels,) if isinstance(channels, int) else channels
         self._n_steps = 2000
 

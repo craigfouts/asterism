@@ -5,11 +5,13 @@ License: Apache 2.0 license
 '''
 
 from sklearn.utils.estimator_checks import parametrize_with_checks
-from .._lda import *
+from .._ntm import *
+from .._rsb import *
 
 _ESTIMATORS = [
-    GibbsLDA(),
-    PyroLDA()
+    NTM(mode='softmax'),
+    NTM(mode='dirichlet'),
+    RSB()
 ]
 
 _EXPECTED_FAILED_CHECKS = lambda _: {

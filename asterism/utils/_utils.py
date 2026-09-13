@@ -77,7 +77,7 @@ def random_state(seed=None, torch_state=False):
     return state
 
 @singledispatch
-def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
+def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=2, ensure_min_features=1, estimator=None, input_name=''):
     check_kwargs = dict(tuple(locals().items())[2:])
     check_array_kwargs = get_kwargs(check_array, **check_kwargs)
     
@@ -92,7 +92,7 @@ def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse
     return X
 
 @check_data.register(torch.Tensor)
-def _(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=1, ensure_min_features=1, estimator=None, input_name=''):
+def _(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=2, ensure_min_features=1, estimator=None, input_name=''):
     check_kwargs = dict(tuple(locals().items())[2:])
     check_array_kwargs = get_kwargs(check_array, **check_kwargs)
     

@@ -1,8 +1,15 @@
-Asterism - Experiments with Point Cloud Clustering
-==================================================
-Semantic segmentation models and dimension reduction algorithms applied to point cloud data. Current methods include variations of latent Dirichlet allocation, some amortized topic models, and a neural clustering process. Also a test bed for ATLAS, a nonparametric topic model for discovering spatial structures.
+<!-- Asterism - Experiments with Point Cloud Clustering
+================================================== -->
 
-Python version: 3.14.6
+**Asterism** is a collection of semantic segmentation models and dimension reduction algorithms applied to point cloud data. Current methods include variations of latent Dirichlet allocation, some amortized topic models, and a neural clustering process. It also serves as a test bed for ATLAS, a nonparametric neural topic model for discovering an unknown number of spatial structures.
+
+## Installation
+
+Until I've had a chance to create a PyPI library, the easiest way to install Asterism is by cloning the source code:
+
+```
+git clone https://github.com/craigfouts/asterism.git
+```
 
 ## Adaptable Topic Modeling of Latent Anatomical Structures
 <img width="795" height="393" alt="image" src="https://github.com/user-attachments/assets/8887bf88-4b21-4e49-ab3d-9f9ed1136f4e" />

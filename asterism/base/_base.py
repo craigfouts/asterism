@@ -18,6 +18,12 @@ __all__ = [
 ]
 
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
+    """Test
+
+    :param desc: Test
+    :type desc: str, optional
+    """
+
     @attrmethod
     def __init__(self, desc=None, seed=None, *, check=True, ensure_min_samples=2, ensure_min_features=1, accept_complex=False, accept_sparse=False, accept_large_sparse=False, ensure_all_finite=True):
         super().__init__()

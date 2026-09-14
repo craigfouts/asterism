@@ -36,6 +36,8 @@ topics = ATLAS(seed=0).fit_predict(data, locs, labels)
 show_comparison(locs, labels, topics)
 ```
 
-![A noisy input dataset (left) and corresponding topic predictions produced by ATLAS (right).]("https://github.com/user-attachments/assets/8887bf88-4b21-4e49-ab3d-9f9ed1136f4e")
+![A noisy input dataset (left) and corresponding topic predictions produced by ATLAS (right).]("https://github.com/craigfouts/asterism/assets/images/atlas.png")
+
+<!-- <img width="795" height="393" alt="image" src="https://github.com/user-attachments/assets/8887bf88-4b21-4e49-ab3d-9f9ed1136f4e" /> -->
 
 Additional examples are provided in ```demos.ipynb```.

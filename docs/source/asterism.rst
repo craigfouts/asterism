@@ -1,11 +1,11 @@
-Asterism
+asterism
 ========
 
 Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    asterism.base
    asterism.core

@@ -14,4 +14,4 @@ Asterism documentation
 
    install
    examples
-   asterism
+   reference

@@ -4,8 +4,6 @@
 
 ## Installation
 
-Until I've had a chance to create a PyPI library, the easiest way to install **Asterism** is by cloning the source code:
-
 ### MacOS
 
 ```bash
@@ -27,8 +25,6 @@ pip install -r requirements.txt
 ```
 
 ## Usage
-
-How to generate and cluster a noisy synthetic dataset using **ATLAS**:
 
 ```python
 data, locs, labels = make_dataset(wiggle=.2, mix=.2, return_tensor=True, seed=0)

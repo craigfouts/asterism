@@ -18,11 +18,6 @@ from ...base import Asterism
 from ...utils import fpc, normalize, relabel, to_tensor
 from ...utils.sugar import attrmethod, buildmethod
 
-__all__ = [
-    'GibbsLDA',  # Line 26
-    'PyroLDA'    # Line 96
-]
-
 class GibbsLDA(Asterism):
     @attrmethod
     def __init__(self, n_topics=5, *, doc_size=32, vocab_size=16, dt_prior=1., tw_prior=1., desc='LDA', seed=None):

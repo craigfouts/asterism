@@ -6,4 +6,12 @@ License: Apache 2.0 license
 
 from ._nets import *
 
-__all__ = [name for name in globals().keys() if not name.startswith('_')]
+__all__ = [
+    'ACTS',
+    'NORMS',
+    'OPTIMS',
+    'MLP',
+    'RNN',
+    'Encoder',
+    'VAE'
+]

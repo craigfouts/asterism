@@ -10,10 +10,6 @@ from ...base import Asterism
 from ...nets import OPTIMS, Encoder, MLP
 from ...utils.sugar import attrmethod, buildmethod
 
-__all__ = [
-    'NTM'  # Line 17
-]
-
 class NTM(Asterism, nn.Module):
     @attrmethod
     def __init__(self, n_topics=5, *, channels=(128, 32), kld_scale=.1, mode='softmax', optim='adam', desc='NTM', seed=None):

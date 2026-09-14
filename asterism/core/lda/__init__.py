@@ -7,4 +7,8 @@ License: Apache 2.0 license
 from ._lda import *
 from ._slda import *
 
-__all__ = [name for name in globals().keys() if not name.startswith('_')]
+__all__ = [
+    'GibbsLDA',
+    'GibbsSLDA',
+    'PyroLDA'
+]

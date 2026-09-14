@@ -12,10 +12,6 @@ from ...base import Asterism
 from ...utils import fpc, normalize
 from ...utils.sugar import attrmethod, buildmethod
 
-__all__ = [
-    'GibbsSLDA'  # Line 19
-]
-
 class GibbsSLDA(Asterism):
     @attrmethod
     def __init__(self, n_topics=5, *, n_docs=-16, doc_size=6., word_size=6., vocab_size=16, dt_prior=1., tw_prior=1., desc='SLDA', seed=None):

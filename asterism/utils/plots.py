@@ -13,8 +13,8 @@ from torch.nn import functional as F
 from ._utils import to_list
 
 __all__ = [
-    'show_dataset',    # Line 55
-    'show_comparison'  # Line 79
+    'show_dataset',
+    'show_comparison'
 ]
 
 def _format_data(locs, labels=None):

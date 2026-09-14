@@ -13,16 +13,6 @@ from tqdm import tqdm
 from ..utils import get_kwargs, torch_random_state
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
-__all__ = [
-    'ACTS',     # Line 36
-    'NORMS',    # Line 37
-    'OPTIMS',   # Line 38
-    'MLP',      # Line 40
-    'RNN',      # Line 74
-    'Encoder',  # Line 95
-    'VAE'       # Line 117
-]
-
 class _Dirichlet(nn.Module):
     def forward(self, x, sigmoid=True):
         if sigmoid:

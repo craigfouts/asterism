@@ -13,10 +13,6 @@ from tqdm import tqdm
 from ..utils import get_kwargs, pad, random_state, relabel, to_tensor
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
-__all__ = [
-    'Asterism'  # Line 20
-]
-
 class Asterism(ClusterMixin, BaseEstimator, metaclass=ABCMeta):
     """Test
 

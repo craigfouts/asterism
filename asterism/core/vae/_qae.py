@@ -11,10 +11,6 @@ from ...base import Asterism
 from ...nets import OPTIMS, MLP, Encoder
 from ...utils import fps
 from ...utils.sugar import attrmethod
-
-__all__ = [
-    'VQAE'  # Line 19
-]
         
 class VQAE(Asterism, nn.Module):
     @attrmethod

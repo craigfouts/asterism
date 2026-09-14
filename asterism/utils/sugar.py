@@ -9,9 +9,9 @@ from inspect import getcallargs
 from ._utils import check_data, get_kwargs, get_methods
 
 __all__ = [
-    'attrmethod',   # Line 18
-    'buildmethod',  # Line 50
-    'checkmethod'   # Line 86
+    'attrmethod',
+    'buildmethod',
+    'checkmethod'
 ]
 
 @singledispatch

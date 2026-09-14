@@ -12,10 +12,6 @@ from ...nets import OPTIMS, MLP
 from ...utils import log_normalize, shuffle
 from ...utils.sugar import attrmethod, buildmethod
 
-__all__ = [
-    'NCP'       # Line 98
-]
-
 class Encoder(nn.Module):
     @attrmethod
     def __init__(self, in_channels, *, wc_channels=(128, 128), bc_channels=(512, 512), lp_channels=(128, 128)):

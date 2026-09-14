@@ -1,4 +1,4 @@
-name: Asterism
+name: "Asterism: Check code"
 
 on:
   push:

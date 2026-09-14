@@ -8,6 +8,13 @@ import sys
 
 sys.path.insert(0, os.path.abspath('../../'))
 
+def remove_docstring(app, obj_type, name, obj, options, lines):
+    if obj_type == 'module':
+        del lines[:]
+
+def setup(app):
+    app.connect('autodoc-process-docstring', remove_docstring)
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 

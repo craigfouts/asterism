@@ -1,3 +1,5 @@
+[![Asterism](https://github.com/craigfouts/asterism/actions/workflows/python-app.yml/badge.svg)](https://github.com/craigfouts/asterism/actions/workflows/python-app.yml)
+
 # Asterism - Experiments with Point Cloud Clustering
 
 **Asterism** is a collection of semantic segmentation models and dimension reduction algorithms applied to point cloud data. Current methods include variations of latent Dirichlet allocation, several neural topic models, and a neural clustering process. It also serves as a test bed for **ATLAS**, a nonparametric neural topic model for discovering an unknown number of spatially-resolved clusters.

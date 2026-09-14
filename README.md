@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/badge/License-Apache_2.0-red.svg)](https://opensource.org/licenses/Apache-2.0) [![Asterism](https://github.com/craigfouts/asterism/actions/workflows/python-app.yml/badge.svg)](https://github.com/craigfouts/asterism/actions/workflows/python-app.yml) [![Repo Health](https://api.gitscope.dev/api/badges/craigfouts/asterism.svg)](https://gitscope.dev) [![Python 3.14.6](https://img.shields.io/badge/python-3.14.6-blue.svg)](https://www.python.org/downloads/release/python-3146/)
+[![Asterism](https://github.com/craigfouts/asterism/actions/workflows/python-app.yml/badge.svg)](https://github.com/craigfouts/asterism/actions/workflows/python-app.yml) [![License](https://img.shields.io/badge/License-Apache_2.0-red.svg)](https://opensource.org/licenses/Apache-2.0) [![Python 3.14.6](https://img.shields.io/badge/python-3.14.6-blue.svg)](https://www.python.org/downloads/release/python-3146/)
 
 # Asterism - Experiments with Point Cloud Clustering
 

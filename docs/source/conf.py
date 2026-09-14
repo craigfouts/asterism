@@ -6,7 +6,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../../'))
+sys.path.append(os.path.abspath('../../'))
 
 def remove_docstring(app, obj_type, name, obj, options, lines):
     if obj_type == 'module':

@@ -11,9 +11,9 @@ from sklearn.utils import check_random_state
 from . import to_list, to_tensor
 
 __all__ = [
-    'CHECKERS',
-    'POLYGONS',
-    'make_dataset'
+    'CHECKERS',     # Line 19
+    'POLYGONS',     # Line 25
+    'make_dataset'  # Line 63
 ]
 
 CHECKERS = np.array([

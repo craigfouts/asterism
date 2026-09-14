@@ -14,13 +14,13 @@ from ..utils import get_kwargs, torch_random_state
 from ..utils.sugar import attrmethod, buildmethod, checkmethod
 
 __all__ = [
-    'ACTS',     # Line 26
-    'NORMS',    # Line 27
-    'OPTIMS',   # Line 28
+    'ACTS',     # Line 36
+    'NORMS',    # Line 37
+    'OPTIMS',   # Line 38
     'MLP',      # Line 40
     'RNN',      # Line 74
     'Encoder',  # Line 95
-    'VAE'       # Line 118
+    'VAE'       # Line 117
 ]
 
 class _Dirichlet(nn.Module):

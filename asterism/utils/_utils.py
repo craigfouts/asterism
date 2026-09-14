@@ -19,25 +19,25 @@ from torch import Generator
 from tqdm import tqdm
 
 __all__ = [
-    'set_torch_seed',      # Line 43
-    'torch_random_state',  # Line 53
-    'random_state',        # Line 63
-    'check_data',          # Line 72
-    'get_methods',         # Line 101
-    'get_kwargs',          # Line 110
-    'to_list',             # Line 121
-    'to_tensor',           # Line 134
-    'pad',                 # Line 145
-    'relabel',             # Line 157
-    'shuffle',             # Line 186
-    'batch_split',         # Line 198
-    'normalize',           # Line 229
-    'log_normalize',       # Line 235
-    'knn',                 # Line 249
-    'knn2D',               # Line 265
-    'fps',                 # Line 289
-    'fpc',                 # Line 319
-    'kmeans'               # Line 335
+    'set_torch_seed',      # Line 44
+    'torch_random_state',  # Line 61
+    'random_state',        # Line 71
+    'check_data',          # Line 80
+    'get_methods',         # Line 109
+    'get_kwargs',          # Line 118
+    'to_list',             # Line 129
+    'to_tensor',           # Line 142
+    'pad',                 # Line 159
+    'relabel',             # Line 171
+    'shuffle',             # Line 201
+    'batch_split',         # Line 225
+    'normalize',           # Line 256
+    'log_normalize',       # Line 262
+    'knn',                 # Line 276
+    'knn2D',               # Line 292
+    'fps',                 # Line 316
+    'fpc',                 # Line 346
+    'kmeans'               # Line 362
 ]
 
 @singledispatch
@@ -77,34 +77,34 @@ def random_state(seed=None, torch_state=False):
     return state
 
 @singledispatch
-def check_data(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=2, ensure_min_features=1, estimator=None, input_name=''):
+def check_data(x, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=2, ensure_min_features=1, estimator=None, input_name=''):
     check_kwargs = dict(tuple(locals().items())[2:])
     check_array_kwargs = get_kwargs(check_array, **check_kwargs)
     
-    if isinstance(X, (tuple, list)):
-        X = np.array(X)
+    if isinstance(x, (tuple, list)):
+        x = np.array(x)
 
-    X = check_array(X, **check_array_kwargs)
+    x = check_array(x, **check_array_kwargs)
 
-    if not accept_complex and np.iscomplex(X).any():
+    if not accept_complex and np.iscomplex(x).any():
         raise ValueError('Complex data not supported.')
     
-    return X
+    return x
 
 @check_data.register(torch.Tensor)
-def _(X, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=2, ensure_min_features=1, estimator=None, input_name=''):
+def _(x, accept_complex=False, accept_sparse=False, accept_large_sparse=False, dtype='numeric', order=None, ensure_all_finite=True, ensure_2d=True, allow_nd=False, ensure_min_samples=2, ensure_min_features=1, estimator=None, input_name=''):
     check_kwargs = dict(tuple(locals().items())[2:])
     check_array_kwargs = get_kwargs(check_array, **check_kwargs)
     
-    if isinstance(X, (tuple, list)):
-        X = np.array(X)
+    if isinstance(x, (tuple, list)):
+        x = np.array(x)
 
-    X = torch.tensor(check_array(X, **check_array_kwargs))
+    x = torch.tensor(check_array(x, **check_array_kwargs))
 
-    if not accept_complex and torch.is_complex(X):
+    if not accept_complex and torch.is_complex(x):
         raise ValueError('Complex data not supported.')
     
-    return X
+    return x
 
 def get_methods(cls, prefix='', suffix='', return_callable=False):
     methods = []
@@ -156,14 +156,14 @@ def to_tensor(*items, dtype=torch.float32):
     return tensors
 
 @singledispatch
-def pad(X, pad):
-    out = np.pad(X, pad)
+def pad(x, pad):
+    out = np.pad(x, pad)
 
     return out
 
 @pad.register(torch.Tensor)
-def _(X, pad):
-    out = F.pad(X, pad)
+def _(x, pad):
+    out = F.pad(x, pad)
 
     return out
 
@@ -171,14 +171,14 @@ def _(X, pad):
 def relabel(labels, target=None):
     if target is None:
         unique, inverse = np.unique_inverse(labels)
-        scores = np.eye(len(inverse))[inverse, :inverse.max() + 1]
+        scores = np.eye(inverse.shape[0])[inverse, :inverse.max() + 1]
     else:
         unique = np.unique(labels := relabel(labels))
         _, target = np.unique_inverse(target)
-        scores = confusion_matrix(target[:len(labels)], labels)
+        scores = confusion_matrix(target[:labels.shape[0]], labels)
 
     _, mask = linear_sum_assignment(scores, maximize=True)
-    labels = (labels[None] == unique[mask[mask < len(unique)], None]).argmax(0)
+    labels = (labels[None] == unique[mask[mask < unique.shape[0]], None]).argmax(0)
 
     return labels
 
@@ -186,40 +186,40 @@ def relabel(labels, target=None):
 def _(labels, target=None):
     if target is None:
         unique, inverse = labels.unique(return_inverse=True)
-        scores = torch.eye(len(inverse))[inverse, :inverse.max() + 1]
+        scores = torch.eye(inverse.shape[0])[inverse, :inverse.max() + 1]
     else:
         unique = (labels := relabel(labels)).unique()
         _, target = target.unique(return_inverse=True)
-        scores = confusion_matrix(target[:len(labels)], labels)
+        scores = confusion_matrix(target[:labels.shape[0]], labels)
 
     _, mask = linear_sum_assignment(scores, maximize=True)
-    labels = (labels[None] == unique[mask[mask < len(unique)], None]).float().argmax(0)
+    labels = (labels[None] == unique[mask[mask < unique.shape[0]], None]).float().argmax(0)
 
     return labels
 
 @singledispatch
-def shuffle(data, labels=None, sort=False, cut=None, seed=None):
+def shuffle(x, labels=None, sort=False, cut=None, seed=None):
     state = random_state(seed)
-    mask = state.permutation(data.shape[-2])[:cut]
-    data = data[:, mask] if data.ndim > 2 else data[mask]
+    mask = state.permutation(x.shape[-2])[:cut]
+    x = x[:, mask] if x.ndim > 2 else x[mask]
 
     if labels is not None:
         labels = relabel(labels[mask]) if sort else labels[mask]
 
-        return data, labels
-    return data
+        return x, labels
+    return x
 
 @shuffle.register(torch.Tensor)
-def _(data, labels=None, sort=False, cut=None, seed=None):
+def _(x, labels=None, sort=False, cut=None, seed=None):
     state = random_state(seed, torch_state=True)
-    mask = torch.randperm(data.shape[-2], generator=state)[:cut]
-    data = data[:, mask] if data.ndim > 2 else data[mask]
+    mask = torch.randperm(x.shape[-2], generator=state)[:cut]
+    x = x[:, mask] if x.ndim > 2 else x[mask]
 
     if labels is not None:
         labels = relabel(labels[mask]) if sort else labels[mask]
 
-        return data, labels
-    return data
+        return x, labels
+    return x
 
 @singledispatch
 def batch_split(x, y, imgs=None, n_test=1):
@@ -289,26 +289,26 @@ def _(x, k=1, loop=True):
     return edges
 
 @singledispatch
-def knn2D(X, k=1, loop=True):
-    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
-    edges = np.zeros(2, len(X)*k, dtype=np.int32)
+def knn2D(x, k=1, loop=True):
+    x = pad(x, ((n := 3 - x.shape[1])*(n > 0), 0))
+    edges = np.zeros(2, x.shape[0]*k, dtype=np.int32)
 
-    for i in range(len(np.unique(X[:, 0]))):
-        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
+    for i in range(np.unique(x[:, 0]).shape[0]):
+        mask_i, mask_h = x[:, 0] == i, x[:, 0] < i
         end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
-        edges[:, start:end] = knn(X[mask_i], k) + m
+        edges[:, start:end] = knn(x[mask_i], k) + m
 
     return edges
 
 @knn2D.register(torch.Tensor)
-def _(X, k=1, loop=True):
-    X = pad(X, ((n := 3 - X.shape[1])*(n > 0), 0))
-    edges = torch.zeros(2, len(X)*k, dtype=torch.int32)
+def _(x, k=1, loop=True):
+    x = pad(x, ((n := 3 - x.shape[1])*(n > 0), 0))
+    edges = torch.zeros(2, x.shape[0]*k, dtype=torch.int32)
 
-    for i in range(len(X[:, 0].unique())):
-        mask_i, mask_h = X[:, 0] == i, X[:, 0] < i
+    for i in range(x[:, 0].unique().shape[0]):
+        mask_i, mask_h = x[:, 0] == i, x[:, 0] < i
         end = (start := (m := mask_h.sum())*k) + mask_i.sum()*k
-        edges[:, start:end] = knn(X[mask_i], k) + m
+        edges[:, start:end] = knn(x[mask_i], k) + m
 
     return edges
 
@@ -359,40 +359,40 @@ def _(x, n_topics=5, seed=None):
     return topics
 
 @singledispatch
-def kmeans(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):
+def kmeans(x, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):
     state, k_range = check_random_state(seed), np.arange(k)
-    labels = np.zeros((n_perms, n_samples := len(data)), dtype=np.int32)
+    labels = np.zeros((n_perms, n_samples := x.shape[0]), dtype=np.int32)
 
     for i in tqdm(range(n_perms), desc) if verbosity == 1 else range(n_perms):
-        centroids = data[state.permutation(n_samples)[:k]]
+        centroids = x[state.permutation(n_samples)[:k]]
 
         for _ in range(n_steps):
-            labels[i] = relabel(cdist(data, centroids).argmin(-1))
-            assignments = (labels[i, :, None] == k_range).astype(data.dtype)
+            labels[i] = relabel(cdist(x, centroids).argmin(-1))
+            assignments = (labels[i, :, None] == k_range).astype(x.dtype)
             mask = assignments.sum(0) > 0
             assignments = assignments[:, mask]
             weights = assignments@np.diag(1/assignments.sum(0))
-            centroids[mask[:k]] = weights.T@data
+            centroids[mask[:k]] = weights.T@x
 
     labels = mode(labels).mode
 
     return labels
 
 @kmeans.register(torch.Tensor)
-def _(data, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):
+def _(x, k=5, n_steps=100, n_perms=10, desc='KMeans', verbosity=0, seed=None):
     state, k_range = torch_random_state(seed), np.arange(k)
-    labels = torch.zeros((n_perms, n_samples := len(data)), dtype=torch.int32)
+    labels = torch.zeros((n_perms, n_samples := x.shape[0]), dtype=torch.int32)
 
     for i in tqdm(range(n_perms), desc) if verbosity == 1 else range(n_perms):
-        centroids = data[torch.randperm(n_samples, generator=state)[:k]]
+        centroids = x[torch.randperm(n_samples, generator=state)[:k]]
 
         for _ in range(n_steps):
-            labels[i] = relabel(torch.cdist(data, centroids).argmin(-1))
-            assignments = (labels[i, :, None] == k_range).to(data.dtype)
+            labels[i] = relabel(torch.cdist(x, centroids).argmin(-1))
+            assignments = (labels[i, :, None] == k_range).to(x.dtype)
             mask = assignments.sum(0) > 0
             assignments = assignments[:, mask]
             weights = assignments@torch.diag(1/assignments.sum(0))
-            centroids[mask[:k]] = weights.T@data
+            centroids[mask[:k]] = weights.T@x
 
     labels = torch.mode(labels, 0).values
 

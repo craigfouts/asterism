@@ -13,8 +13,7 @@ from ...utils import log_normalize, shuffle
 from ...utils.sugar import attrmethod, buildmethod
 
 __all__ = [
-    'Encoder',  # Line 20
-    'NCP'       # Line 101
+    'NCP'       # Line 98
 ]
 
 class Encoder(nn.Module):

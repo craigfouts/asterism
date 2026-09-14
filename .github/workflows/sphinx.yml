@@ -23,6 +23,7 @@ jobs:
         if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt; fi
     - name: Build HTML
       run: make html
+      working-directory: docs/
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:

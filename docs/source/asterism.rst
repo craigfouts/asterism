@@ -1,4 +1,4 @@
-asterism
+Asterism
 ========
 
 Subpackages

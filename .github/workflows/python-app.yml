@@ -1,4 +1,4 @@
-name: Asterism
+name: Tests
 
 on:
   push:

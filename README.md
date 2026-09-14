@@ -32,7 +32,7 @@ python -m venv .env
 pip install -r requirements.txt
 ```
 
-### Usage
+## Usage
 
 How to generate and cluster a noisy synthetic dataset using ATLAS:
 

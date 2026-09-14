@@ -4,15 +4,9 @@
 
 ## Installation
 
-### Dependencies
-
-**Asterism** has been developed and validated with **Python 3.14.6**. For additional dependencies, see ```requirements.txt```.
-
-### From Source
-
 Until I've had a chance to create a PyPI library, the easiest way to install Asterism is by cloning the source code:
 
-#### MacOS
+### MacOS
 
 ```{}
 git clone https://github.com/craigfouts/asterism.git
@@ -22,7 +16,7 @@ source .env/bin/activate
 pip install -r requirements.txt
 ```
 
-#### Windows
+### Windows
 
 ```{}
 git clone https://github.com/craigfouts/asterism.git

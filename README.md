@@ -8,7 +8,7 @@ Until I've had a chance to create a PyPI library, the easiest way to install **A
 
 ### MacOS
 
-```{}
+```bash
 git clone https://github.com/craigfouts/asterism.git
 cd asterism
 python -m venv .env
@@ -18,7 +18,7 @@ pip install -r requirements.txt
 
 ### Windows
 
-```{}
+```bash
 git clone https://github.com/craigfouts/asterism.git
 cd asterism
 python -m venv .env
@@ -38,4 +38,4 @@ show_comparison(locs, labels, topics)
 
 <img width="100%" alt="image" src="https://github.com/user-attachments/assets/8887bf88-4b21-4e49-ab3d-9f9ed1136f4e" />
 
-Additional examples are provided in ```demos.ipynb```.
+Additional examples are provided in ```notebooks/demos.ipynb```.

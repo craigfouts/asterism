@@ -1,0 +1,21 @@
+asterism
+========
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   asterism.base
+   asterism.core
+   asterism.nets
+   asterism.utils
+
+Module contents
+---------------
+
+.. automodule:: asterism
+   :members:
+   :show-inheritance:
+   :undoc-members:

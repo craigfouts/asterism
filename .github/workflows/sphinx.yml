@@ -5,6 +5,10 @@ on: push
 permissions:
   contents: write
 
+python:
+  install:
+    - requirements: docs/requirements.txt
+
 jobs:
   build:
     runs-on: ubuntu-latest

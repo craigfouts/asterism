@@ -31,6 +31,7 @@
 <link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
   <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
@@ -41,12 +42,12 @@
     <script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'asterism.utils';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="icon" href="_static/icon.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="asterism.nets" href="asterism.nets.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -137,26 +138,6 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="install.html">
-    Installation
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="examples.html">
-    Examples
-  </a>
-</li>
-
-
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="reference.html">
-    Reference
-  </a>
-</li>
-
   </ul>
 </nav></div>
       
@@ -237,26 +218,6 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="install.html">
-    Installation
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="examples.html">
-    Examples
-  </a>
-</li>
-
-
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="reference.html">
-    Reference
-  </a>
-</li>
-
   </ul>
 </nav></div>
           
@@ -300,20 +261,17 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="modules.html">Asterism</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active has-children"><a class="reference internal" href="asterism.html">asterism</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="asterism.base.html">asterism.base</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="asterism.core.html">asterism.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l4"><a class="reference internal" href="asterism.core.lda.html">asterism.core.lda</a></li>
-<li class="toctree-l4"><a class="reference internal" href="asterism.core.ncp.html">asterism.core.ncp</a></li>
-<li class="toctree-l4"><a class="reference internal" href="asterism.core.ntm.html">asterism.core.ntm</a></li>
-<li class="toctree-l4"><a class="reference internal" href="asterism.core.vae.html">asterism.core.vae</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="asterism.html">asterism</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="asterism.base.html">asterism.base</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="asterism.core.html">asterism.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="asterism.core.lda.html">asterism.core.lda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="asterism.core.ncp.html">asterism.core.ncp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="asterism.core.ntm.html">asterism.core.ntm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="asterism.core.vae.html">asterism.core.vae</a></li>
 </ul>
 </details></li>
-<li class="toctree-l3"><a class="reference internal" href="asterism.nets.html">asterism.nets</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">asterism.utils</a></li>
-</ul>
-</details></li>
+<li class="toctree-l2"><a class="reference internal" href="asterism.nets.html">asterism.nets</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">asterism.utils</a></li>
 </ul>
 </details></li>
 </ul>
@@ -356,15 +314,6 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    
-    <li class="breadcrumb-item"><a href="reference.html" class="nav-link">Reference</a></li>
-    
-    
-    <li class="breadcrumb-item"><a href="modules.html" class="nav-link">Asterism</a></li>
-    
-    
-    <li class="breadcrumb-item"><a href="asterism.html" class="nav-link">asterism</a></li>
-    
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">asterism.utils</span></li>
   </ul>
 </nav>
@@ -566,15 +515,6 @@
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
-    <a class="left-prev"
-       href="asterism.nets.html"
-       title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">asterism.nets</p>
-      </div>
-    </a>
 </div>
                 </footer>
               

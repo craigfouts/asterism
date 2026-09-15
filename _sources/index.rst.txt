@@ -6,6 +6,13 @@
 Asterism documentation
 ======================
 
+.. toctree::
+   :hidden:
+
+   install
+   examples
+   reference
+
 ``Asterism`` is a collection of semantic segmentation models and dimension reduction algorithms applied to point cloud data. Current methods include variations of latent Dirichlet allocation, several neural topic models, and a neural clustering process. It also serves as a test bed for ``ATLAS``, a nonparametric neural topic model for discovering a variable number of spatially-resolved clusters.
 
 .. grid:: 2

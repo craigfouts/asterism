@@ -48,6 +48,8 @@
     <link rel="icon" href="_static/icon.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Reference" href="reference.html" />
+    <link rel="prev" title="Installation" href="install.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -138,6 +140,26 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="install.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference.html">
+    Reference
+  </a>
+</li>
+
   </ul>
 </nav></div>
       
@@ -172,6 +194,21 @@
   </ul>
 </div></div>
       
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/craigfouts/asterism/tree/main" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
     </div>
     
   </div>
@@ -202,8 +239,6 @@
       
       
       
-        
-      
       <dialog id="pst-primary-sidebar-modal"></dialog>
       <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
         
@@ -220,6 +255,26 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="install.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference.html">
+    Reference
+  </a>
+</li>
+
   </ul>
 </nav></div>
           
@@ -244,6 +299,21 @@
     <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/craigfouts/asterism/tree/main" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
         
       </div>
     
@@ -305,8 +375,8 @@
 <h1>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 </div>
-<section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
+<section id="atlas">
+<h2>ATLAS<a class="headerlink" href="#atlas" title="Link to this heading">#</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">ATLAS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
@@ -316,7 +386,128 @@
 <span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
 </pre></div>
 </div>
-<img alt="_images/atlas.png" src="_images/atlas.png" />
+<a class="reference internal image-reference" href="_images/atlas.png"><img alt="_images/atlas.png" src="_images/atlas.png" style="width: 100%;" />
+</a>
+</section>
+<section id="gibbslda">
+<h2>GibbsLDA<a class="headerlink" href="#gibbslda" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">GibbsLDA</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">GibbsLDA</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/gibbslda.png"><img alt="_images/gibbslda.png" src="_images/gibbslda.png" style="width: 100%;" />
+</a>
+</section>
+<section id="pyrolda">
+<h2>PyroLDA<a class="headerlink" href="#pyrolda" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">PyroLDA</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">(</span><span class="n">return_tensor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">PyroLDA</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/pyrolda.png"><img alt="_images/pyrolda.png" src="_images/pyrolda.png" style="width: 100%;" />
+</a>
+</section>
+<section id="gibbsslda">
+<h2>GibbsSLDA<a class="headerlink" href="#gibbsslda" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">GibbsSLDA</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">(</span><span class="n">wiggle</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span> <span class="n">mix</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">GibbsSLDA</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/gibbsslda.png"><img alt="_images/gibbsslda.png" src="_images/gibbsslda.png" style="width: 100%;" />
+</a>
+</section>
+<section id="ntm">
+<h2>NTM<a class="headerlink" href="#ntm" title="Link to this heading">#</a></h2>
+<div class="sd-tab-set docutils">
+<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
+<label class="sd-tab-label" for="sd-tab-item-0">
+Softmax</label><div class="sd-tab-content docutils">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">NTM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">(</span><span class="n">return_tensor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">NTM</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
+<label class="sd-tab-label" for="sd-tab-item-1">
+Dirichlet</label><div class="sd-tab-content docutils">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">NTM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">(</span><span class="n">return_tensor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">NTM</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;dirichlet&#39;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<a class="reference internal image-reference" href="_images/ntm.png"><img alt="_images/ntm.png" src="_images/ntm.png" style="width: 100%;" />
+</a>
+</section>
+<section id="rsb">
+<h2>RSB<a class="headerlink" href="#rsb" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">RSB</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">(</span><span class="n">return_tensor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">RSB</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/rsb.png"><img alt="_images/rsb.png" src="_images/rsb.png" style="width: 100%;" />
+</a>
+</section>
+<section id="vqae">
+<h2>VQAE<a class="headerlink" href="#vqae" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">VQAE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">(</span><span class="n">return_tensor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">VQAE</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">topics</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/rsb.png"><img alt="_images/rsb.png" src="_images/rsb.png" style="width: 100%;" />
+</a>
+</section>
+<section id="ncp">
+<h2>NCP<a class="headerlink" href="#ncp" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asterism</span><span class="w"> </span><span class="kn">import</span> <span class="n">NCP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">asterism.utils.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_comparison</span>
+
+<span class="n">data</span><span class="p">,</span> <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">make_dataset</span><span class="p">((</span><span class="s1">&#39;polygons&#39;</span><span class="p">,)</span><span class="o">*</span><span class="mi">5</span><span class="p">,</span> <span class="n">return_tensor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">data_train</span><span class="p">,</span> <span class="n">labels_train</span><span class="p">,</span> <span class="n">data_test</span><span class="p">,</span> <span class="n">labels_test</span> <span class="o">=</span> <span class="n">batch_split</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">locs</span><span class="p">)</span>
+<span class="n">locs_test</span> <span class="o">=</span> <span class="n">locs</span><span class="p">[</span><span class="o">-</span><span class="n">data_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:]</span>
+<span class="n">topics</span> <span class="o">=</span> <span class="n">NCP</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_train</span><span class="p">,</span> <span class="n">labels_train</span><span class="p">)(</span><span class="n">data_test</span><span class="p">)</span>
+<span class="n">show_comparison</span><span class="p">(</span><span class="n">locs_test</span><span class="p">,</span> <span class="n">labels_test</span><span class="p">,</span> <span class="n">topics</span><span class="p">,</span> <span class="n">title1</span><span class="o">=</span><span class="s1">&#39;datasets (x4)&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/rsb.png"><img alt="_images/rsb.png" src="_images/rsb.png" style="width: 100%;" />
+</a>
 </section>
 </section>
 
@@ -330,6 +521,24 @@
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="install.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Installation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="reference.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
@@ -349,18 +558,16 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#usage">Usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#atlas">ATLAS</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gibbslda">GibbsLDA</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyrolda">PyroLDA</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gibbsslda">GibbsSLDA</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ntm">NTM</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rsb">RSB</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vqae">VQAE</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ncp">NCP</a></li>
 </ul>
   </nav></div>
-
-  <div class="sidebar-secondary-item">
-
-  <div class="tocsection sourcelink">
-    <a href="_sources/examples.rst.txt">
-      <i class="fa-solid fa-file-lines"></i> Show Source
-    </a>
-  </div>
-</div>
 
 </div></div>
               

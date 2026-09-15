@@ -53,7 +53,6 @@ html_sidebars = {
     'examples': [],
 }
 html_static_path = ['_static']
-html_title = ''
-html_logo = '../assets/images/icon.png'
+html_title = 'Asterism'
 html_favicon = '../assets/images/icon.png'
 html_show_sphinx = False

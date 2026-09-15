@@ -1,6 +1,8 @@
 Examples
 ========
 
+.. toctree::
+
 Usage
 -----
 

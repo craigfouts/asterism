@@ -11,20 +11,24 @@ Coming soon...
 Clone
 -----
 
-.. tab-set-code::
+.. tab-set::
 
-    .. code-block:: MacOS
+    .. tab-item:: MacOS
 
-        git clone https://github.com/craigfouts/asterism.git
-        cd asterism
-        python -m venv .env
-        source .env/bin/activate
-        pip install -r requirements.txt
+        .. code-block:: console
 
-    .. code-block:: Windows
+            git clone https://github.com/craigfouts/asterism.git
+            cd asterism
+            python -m venv .env
+            source .env/bin/activate
+            pip install -r requirements.txt
 
-        git clone https://github.com/craigfouts/asterism.git
-        cd asterism
-        python -m venv .env
-        .env\Scripts\activate
-        pip install -r requirements.txt
+    .. tab-item:: Windows
+
+        .. code-block:: console
+
+            git clone https://github.com/craigfouts/asterism.git
+            cd asterism
+            python -m venv .env
+            .env\Scripts\activate
+            pip install -r requirements.txt

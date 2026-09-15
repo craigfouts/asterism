@@ -34,6 +34,24 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'pydata_sphinx_theme'
+html_theme_options = {
+    # 'external_links': [
+    #     {'name': 'GitHub', 'url': 'https://github.com/craigfouts/asterism/tree/main'}
+    # ],
+    'icon_links': [
+        {
+            'name': 'GitHub',
+            'url': 'https://github.com/craigfouts/asterism/tree/main',
+            'icon': 'fa-brands fa-github',
+            'type': 'fontawesome',
+        }
+    ],
+    'secondary_sidebar_items': ['page-toc'],
+}
+html_sidebars = {
+    'install': [],
+    'examples': [],
+}
 html_static_path = ['_static']
 html_title = ''
 html_logo = '../assets/images/icon.png'

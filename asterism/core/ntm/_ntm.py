@@ -1,8 +1,7 @@
-'''
+"""
 Authors: Craig Fouts
-Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
-'''
+"""
 
 from torch import nn
 from torch.utils.data import DataLoader

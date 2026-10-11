@@ -1,8 +1,7 @@
-'''
+"""
 Authors: Craig Fouts
-Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
-'''
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np

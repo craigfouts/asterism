@@ -1,8 +1,7 @@
-'''
+"""
 Authors: Craig Fouts
-Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
-'''
+"""
 
 import numpy as np
 from scipy.ndimage import gaussian_filter

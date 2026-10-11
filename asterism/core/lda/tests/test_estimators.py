@@ -1,8 +1,7 @@
-'''
+"""
 Authors: Craig Fouts
-Contact: c.fouts25@imperial.ac.uk
 License: Apache 2.0 license
-'''
+"""
 
 from sklearn.utils.estimator_checks import parametrize_with_checks
 from .._lda import *

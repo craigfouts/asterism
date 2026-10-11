@@ -6,8 +6,12 @@ License: Apache 2.0 license
 from .core import *
 
 __all__ = [
-    'GibbsLDA', 'GibbsSLDA', 'PyroLDA',
+    'ATLAS',
+    'GibbsLDA', 
+    'GibbsSLDA', 
     'NCP',
-    'ATLAS', 'NTM', 'RSB',
+    'NTM',
+    'PyroLDA',
+    'RSB',
     'VQAE'
 ]

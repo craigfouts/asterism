@@ -1,24 +1,18 @@
 """
-Authors: Craig Fouts
+Author(s): Craig fouts
 License: Apache 2.0 license
 """
 
 from functools import singledispatch, wraps
-from inspect import getcallargs
+from inspect import signature
 from ._utils import check_data, get_kwargs, get_methods
-
-__all__ = [
-    'attrmethod',
-    'buildmethod',
-    'checkmethod'
-]
 
 @singledispatch
 def attrmethod(method):
     @wraps(method)
     def wrapper(cls, *args, **kwargs):
-        method_kwargs = dict(getcallargs(method, cls, *args), **kwargs)
-        del method_kwargs['self']
+        (bound := signature(method).bind(cls, *args, **kwargs)).apply_defaults()
+        method_kwargs = {k: v for k, v in bound.arguments.items() if k != 'self'}
 
         for key, val in method_kwargs.items():
             if val is not None or not hasattr(cls, key):
@@ -32,8 +26,8 @@ def _(prefix='', suffix=''):
     def decorator(method):
         @wraps(method)
         def wrapper(cls, *args, **kwargs):
-            method_kwargs = dict(getcallargs(method, cls, *args, **kwargs), **kwargs)
-            del method_kwargs['self']
+            (bound := signature(method).bind(cls, *args, **kwargs)).apply_defaults()
+            method_kwargs = {k: v for k, v in bound.arguments.items() if k != 'self'}
 
             for key, val in method_kwargs.items():
                 key = prefix + key + suffix

@@ -6,23 +6,24 @@ License: Apache 2.0 license
 #define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
-#include <arrayobject.h>
 
-float _cdist(float x1, float x2) {
+// float _sum(float *)
+
+float _test(float x1, float x2) {
     return x1 - x2;
 }
 
-static PyObject *cdist(PyObject *self, PyObject *args) {
+static PyObject *test(PyObject *self, PyObject *args) {
     float x1, x2;
 
     if (!PyArg_ParseTuple(args, "ff", &x1, &x2))
         return NULL;
 
-    return Py_BuildValue("f", _cdist(x1, x2));
+    return Py_BuildValue("f", _test(x1, x2));
 }
 
 static PyMethodDef methods[] = {
-    {"cdist", cdist, METH_VARARGS, "cdist"},
+    {"test", test, METH_VARARGS, "test"},
     {NULL, NULL, 0, NULL}
 };
 
@@ -34,6 +35,5 @@ static struct PyModuleDef module = {
 };
 
 PyMODINIT_FUNC PyInit__utils_(void) {
-    import_array();
     return PyModule_Create(&module);
 }

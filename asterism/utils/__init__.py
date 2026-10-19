@@ -4,6 +4,7 @@ License: Apache 2.0 license
 """
 
 from ._utils import *
+from ._utils_ import test
 
 __all__ = [
     'batch_split',
@@ -22,6 +23,7 @@ __all__ = [
     'relabel',
     'set_torch_seed',
     'shuffle',
+    'test',
     'to_list',
     'to_tensor',
     'torch_random_state',

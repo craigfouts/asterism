@@ -4,8 +4,10 @@ License: Apache 2.0 license
 */
 
 #define PY_SSIZE_T_CLEAN
-
 #include <Python.h>
+#include "numpy/ndarraytypes.h"
+#include "numpy/ufuncobject.h"
+#include "numpy/npy_3kcompat.h"
 
 // float _sum(float *)
 
@@ -20,6 +22,17 @@ static PyObject *test(PyObject *self, PyObject *args) {
         return NULL;
 
     return Py_BuildValue("f", _test(x1, x2));
+
+    // PyObject *arg1 = NULL;
+    // PyObject *arr1 = NULL;
+    // int nd;
+
+    // if (!PyArg_ParseTuple(args, "O", &arg1))
+    //     return NULL;
+
+    // arr1 = PyArray_FROM_OTF(arg1, NPY_DOUBLE, NPY_IN_ARRAY);
+    // nd = PyArray_NDIM(arr1);
+    // npy_intp *sp = PyArray_SHAPE(arr1);
 }
 
 static PyMethodDef methods[] = {
